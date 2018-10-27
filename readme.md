@@ -10,7 +10,7 @@
 <script src="https://unpkg.com/aion-webcomponents@0.0.2/dist/aion-webcomponents.js"></script>
 ```
 
-### User aion-blocks component 
+### Use aion-blocks component 
 
 ```
 <aion-blocks limit={limit} duration="{polling time in sec}" gql-url={graphql_endpoint}></aion-blocks>
