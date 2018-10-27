@@ -1,6 +1,6 @@
 {
   "name": "aion-webcomponents",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "AION Webcomponents",
   "module": "dist/esm/index.js",
   "main": "dist/index.js",
