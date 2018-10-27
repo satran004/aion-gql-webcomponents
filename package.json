@@ -1,0 +1,36 @@
+{
+  "name": "aion-webcomponents",
+  "version": "0.0.1",
+  "description": "AION Webcomponents",
+  "module": "dist/esm/index.js",
+  "main": "dist/index.js",
+  "types": "dist/types/components.d.ts",
+  "collection": "dist/collection/collection-manifest.json",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build": "stencil build",
+    "docs": "stencil build --docs",
+    "start": "stencil build --dev --watch --serve",
+    "test": "stencil test --spec --e2e",
+    "test.watch": "stencil test --spec --e2e --watchAll"
+  },
+  "dependencies": {
+
+  },
+  "devDependencies": {
+    "@stencil/core": "~0.14.1",
+    "@stencil/sass": "^0.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/satran004/aion-webcomponents.git"
+  },
+  "author": "Satya",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/satran004/aion-webcomponents/issues"
+  },
+  "homepage": "https://github.com/satran004/aion-webcomponents"
+}

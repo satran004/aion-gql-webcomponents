@@ -1,0 +1,36 @@
+@import '../../global/variables.scss';
+
+div {
+  //background: $blue-steel;
+}
+
+.c-card__item--brand {
+  background-color: $brand-main;
+}
+.c-card__item--brand a {
+
+    text-decoration: none !important;
+    color: #ffffff;
+
+}
+
+.c-card__item--brand .title {
+  float: right;
+}
+
+.c-list__item {
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  background-color: #F5F5F5;
+  color: darkolivegreen;
+
+  .title {
+    font-weight: bold;
+  }
+  a {
+    text-decoration: none !important;
+    color: darkolivegreen;
+  }
+}
