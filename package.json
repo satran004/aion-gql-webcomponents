@@ -1,7 +1,7 @@
 {
-  "name": "aion-webcomponents",
-  "version": "0.0.3",
-  "description": "AION Webcomponents",
+  "name": "aion-gql-webcomponents",
+  "version": "0.0.5",
+  "description": "AION Webcomponents using AION GraphQL",
   "module": "dist/esm/index.js",
   "main": "dist/index.js",
   "types": "dist/types/components.d.ts",
@@ -23,12 +23,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/satran004/aion-webcomponents.git"
+    "url": "git+https://github.com/satran004/aion-gql-webcomponents.git"
   },
   "author": "Satya",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/satran004/aion-webcomponents/issues"
+    "url": "https://github.com/satran004/aion-gql-webcomponents/issues"
   },
-  "homepage": "https://github.com/satran004/aion-webcomponents"
+  "homepage": "https://github.com/satran004/aion-gql-webcomponents"
 }
