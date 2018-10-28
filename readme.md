@@ -17,5 +17,5 @@
 ```
 Example:
 ```
-<aion-blocks limit="8" duration="10" gql-url="https://api.aion-graphql.com/graphql"></aion-blocks>
+<aion-blocks limit="8" duration="10" gql-url="https://<host>/graphql"></aion-blocks>
 ```
