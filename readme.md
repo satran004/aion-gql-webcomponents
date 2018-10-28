@@ -23,6 +23,14 @@ Example:
 
 ## Development
 
+```
+git clone https://github.com/satran004/aion-gql-webcomponents.git
+```
+
+```
+npm install
+```
+
 ### To run local dev server
 
 ```
