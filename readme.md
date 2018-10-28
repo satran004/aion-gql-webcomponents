@@ -5,7 +5,7 @@
 
 ## To use: 
 
-### Import aion-webcomponents.js
+### Import aion-gql-webcomponents.js
 
 ```
 <script src="https://unpkg.com/aion-gql-webcomponents@<version>/dist/aion-gql-webcomponents.js"></script>
