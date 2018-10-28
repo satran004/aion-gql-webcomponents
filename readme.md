@@ -8,8 +8,9 @@
 ### Import aion-webcomponents.js
 
 ```
-<script src="https://unpkg.com/aion-gql-webcomponents@0.0.4/dist/aion-gql-webcomponents.js"></script>
+<script src="https://unpkg.com/aion-gql-webcomponents@<version>/dist/aion-gql-webcomponents.js"></script>
 ```
+
 
 ### Use aion-blocks component 
 
