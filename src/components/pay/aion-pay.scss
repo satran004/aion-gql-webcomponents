@@ -1,0 +1,41 @@
+@import '../../global/variables.scss';
+
+.aion-image {
+  width: 40px;
+  height: 40px;
+
+}
+
+.aion-heading {
+  display: inline-block;
+  h2 {
+    float: right;
+    text-align: center;
+  }
+}
+
+.o-form-element {
+  padding-right: 10px;
+  .c-field {
+    margin-right: 10px;
+  }
+}
+
+.pay-button {
+  display: inline-block;
+  background-color: #3700B3;
+  text-align: center;
+}
+
+.pay-button {
+  background-color:  #BB86FC;
+  .img-valign {
+    vertical-align: middle;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.aion-unlock {
+   display: inline;
+}

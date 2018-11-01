@@ -4,7 +4,7 @@ import {Block} from "./Block";
 @Component({
   tag: 'aion-blocks',
   styleUrl: 'aion-blocks.scss',
-  //shadow: true
+  shadow: true
 })
 export class AionBlocks {
   @Prop() duration: number;
@@ -75,7 +75,7 @@ export class AionBlocks {
 
   render() {
     return (
-      <div class="o-container o-container--medium">
+      <div class="o-container o-container--medium u-text">
         {this.blocks.map((blk) =>
           <div  class="c-card u-highest">
             <div class="c-card__item c-card__item--brand">#{blk.number}

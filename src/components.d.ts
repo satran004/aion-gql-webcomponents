@@ -22,15 +22,26 @@ export namespace Components {
     'gqlUrl'?: string;
     'limit'?: number;
   }
+
+  interface AionPay {
+    'gqlUrl': string;
+    'to': string;
+  }
+  interface AionPayAttributes extends StencilHTMLAttributes {
+    'gqlUrl'?: string;
+    'to'?: string;
+  }
 }
 
 declare global {
   interface StencilElementInterfaces {
     'AionBlocks': Components.AionBlocks;
+    'AionPay': Components.AionPay;
   }
 
   interface StencilIntrinsicElements {
     'aion-blocks': Components.AionBlocksAttributes;
+    'aion-pay': Components.AionPayAttributes;
   }
 
 
@@ -40,12 +51,20 @@ declare global {
     new (): HTMLAionBlocksElement;
   };
 
+  interface HTMLAionPayElement extends Components.AionPay, HTMLStencilElement {}
+  var HTMLAionPayElement: {
+    prototype: HTMLAionPayElement;
+    new (): HTMLAionPayElement;
+  };
+
   interface HTMLElementTagNameMap {
     'aion-blocks': HTMLAionBlocksElement
+    'aion-pay': HTMLAionPayElement
   }
 
   interface ElementTagNameMap {
     'aion-blocks': HTMLAionBlocksElement;
+    'aion-pay': HTMLAionPayElement;
   }
 
 

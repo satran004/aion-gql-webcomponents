@@ -3,12 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0">
-  <title>Stencil Component Starter</title>
+  <title>AION Webcomponents</title>
   <script src="/build/aion-gql-webcomponents.js"></script>
+  <script>
+    var global = global || window;
+    var Buffer = Buffer || [];
+    var process = process || {
+      env: { DEBUG: undefined },
+      version: []
+    };
+  </script>
 </head>
 <body>
 
-  <aion-blocks limit="8" duration="5" gql-url="https://api.aion-graphql.com/graphql"></aion-blocks>
+  <aion-pay to="0xa01112158d69a368dfebb9db63a903738cf404449d65331e9a045148793c3df3" gql-url="http://localhost:8080/graphql">Pay By AION</aion-pay>
+  <aion-blocks limit="8" duration="5" gql-url="http://localhost:8080/graphql"></aion-blocks>
+
+  <aion-pay to="0xa01112158d69a368dfebb9db63a903738cf404449d65331e9a045148793c3df3" gql-url="http://localhost:8080/graphql"></aion-pay>
+
 
 </body>
 </html>
