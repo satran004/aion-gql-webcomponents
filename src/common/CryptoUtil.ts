@@ -54,10 +54,25 @@ export class CryptoUtil {
   }
 
   public static concatBuffer(buffer1: Uint8Array, buffer2: Uint8Array, length) {
-    var tmp = new Uint8Array(length);
-    tmp.set(buffer1, 0);
-    tmp.set(buffer2, buffer1.byteLength);
-    return tmp;
+    var tmp = new Uint8Array(length)
+    tmp.set(buffer1, 0)
+    tmp.set(buffer2, buffer1.byteLength)
+    return tmp
   }
+
+  public static convertnAmpBalanceToAION(balance) {
+    if(!balance)
+      return 0
+    else
+      return balance / Math.pow(10, 18)
+  }
+
+  public static convertAIONTonAmpBalance(balance) {
+    if(!balance)
+      return 0
+    else
+      return balance * Math.pow(10, 18)
+  }
+
 
 }

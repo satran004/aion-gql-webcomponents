@@ -4,6 +4,7 @@ import {Transaction} from "../../common/Transaction";
 import {TxnResponse} from "../../common/TxnResponse";
 import {Constant} from "../../common/Constant";
 import {SignedTransaction} from "../../common/SignedTransaction";
+import {CryptoUtil} from "../../common/CryptoUtil";
 
 @Component({
   tag: 'aion-pay',
@@ -28,7 +29,13 @@ export class AionPay {
 
   @State() showConfirm: boolean = false
 
+  @State() isError: boolean = false
+
+  @State() errors: string[] = [];
+
   @State() from: string
+
+  @State() fromBalance: number
 
   @State() _to: string
 
@@ -46,7 +53,14 @@ export class AionPay {
 
   amount: number
 
-  NONCE_QUERY: string =  `
+  BALANCE_QUERY: string = `
+    query nonce($address: String!) {
+     chainApi {
+      balance(address: $address) 
+     }
+    }`
+
+  NONCE_QUERY: string = `
     query nonce($address: String!) {
      chainApi {
       nonce(address: $address) 
@@ -72,6 +86,7 @@ export class AionPay {
     this.handleShowPaymentDialog = this.handleShowPaymentDialog.bind(this)
     this.handleHideTransactionInprogressDialog = this.handleHideTransactionInprogressDialog.bind(this)
     this.handleCloseConfirmDialog = this.handleCloseConfirmDialog.bind(this)
+    this.handleHideError = this.handleHideError.bind(this)
     this.handleResetData = this.handleResetData.bind(this)
 
     this.signPayment = this.signPayment.bind(this)
@@ -87,9 +102,11 @@ export class AionPay {
   }
 
 
-  componentDidLoad() {
-    if(this.to)
-      this._to = this.to
+  componentWillLoad() {
+    if (this.to)
+      this._to = this.to.toLowerCase()
+
+    console.log("Inside component will load");
   }
 
   handleShowPaymentDialog() {
@@ -113,12 +130,18 @@ export class AionPay {
     this.handleResetData()
   }
 
+  handleHideError() {
+    this.isError = false
+    this.errors.length = 0
+  }
+
   handleResetData() {
     this.txnInProgress = false
     this.txnDone = false
     this.visible = false
 
     this.from = ''
+    this.fromBalance = null
     this.value = 0
     this.privateKey = ''
     this.gas = 0
@@ -172,15 +195,64 @@ export class AionPay {
   }
 
   handleDerivePublicKey() {
-    let publicKey = TransactionUtil.getAddress(this.privateKey)
+    try {
+      this.handleHideError()
+      let address = TransactionUtil.getAddress(this.privateKey)
 
-    if(publicKey)
-      this.from = publicKey
+      if (address)
+        this.from = address
+
+      this.fetchBalance(this.from, (balance) => {
+        this.fromBalance = CryptoUtil.convertnAmpBalanceToAION(balance);
+      })
+    } catch (error) {
+      console.log(error)
+      this.from = ''
+      this.fromBalance = null
+      this.isError = true
+      this.errors.push("Public Key derivation failed: " + error.toString())
+      throw error
+    }
+  }
+
+  validateInput() {
+
+    this.handleHideError()
+
+    if(isNaN(this.value)) {
+      this.isError = true
+      this.errors.push("Amount is not valid")
+    }
+
+    if(!this.privateKey || this.privateKey.trim().length == 0) {
+      this.isError = true
+      this.errors.push("Private key can not be empty")
+    }
+
+    if(!this._to || this._to.trim().length == 0) {
+      this.isError = true
+      this.errors.push("To address can not be empty")
+    }
+
+    return !this.isError
   }
 
   async signPayment(e) {
     e.preventDefault()
-    this.amount = this.value * Math.pow(10, 18)
+
+    if(!this.validateInput()) {
+      console.log('not a valid input')
+      return
+    }
+
+    console.log("All valid input")
+
+    if(!this._to) {
+      this.handleDerivePublicKey()
+    }
+
+    console.log("lets do signing first..")
+    this.amount = CryptoUtil.convertAIONTonAmpBalance(this.value)
 
     let txn = new Transaction()
     txn.to = this._to
@@ -191,7 +263,16 @@ export class AionPay {
 
     console.log("Fetching current nonce " + txn.nonce)
 
-    this.encodedTxn = TransactionUtil.signTransaction(txn, this.privateKey)
+    try {
+      this.encodedTxn = TransactionUtil.signTransaction(txn, this.privateKey)
+    } catch (error) {
+      console.log(error)
+      this.isError = true
+      this.errors.push("Error in signing transaction. Please refresh and try again")
+      this.errors.push("[Reason] " + error)
+      throw error
+    }
+
     this.encodedTxn.input.from = this.from
 
     this.showConfirm = true
@@ -206,18 +287,75 @@ export class AionPay {
     this.submitRawTransansaction(this.encodedTxn.rawTransaction)
   }
 
-  fetchNonce() {
-    return fetch(this.gqlUrl, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({"query": this.NONCE_QUERY, "variables": {"address": this.from}}),
-    })
-      .then(res => res.json())
-      .then(res => {
-        console.log("Nonce fetched");
-        let nonce = ((res["data"])["chainApi"])["nonce"] as number;
-        return nonce
+  fetchBalance(address, callback) {
+    try {
+      return fetch(this.gqlUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({"query": this.BALANCE_QUERY, "variables": {"address": address}}),
       })
+        .then(res => res.json())
+        .then(res => {
+          console.log("Balance fetched");
+
+          let data = ((res["data"])["chainApi"])["balance"]
+
+          if (data) {
+            let balance = data as number;
+            callback(balance)
+            return balance
+          } else {
+            this._parseErrorFromGQLResponse(res)
+          }
+
+        })
+        .catch(reason => {
+          this.isError = true
+          this.errors.push("Error getting balance for the address")
+          this.errors.push("[Reason] " + reason)
+          throw new Error(reason)
+        })
+    } catch (error) {
+      this.isError = true
+      this.errors.push("Error getting balance for the account. Please close the dialog and try again")
+      console.log(error)
+      throw error
+    }
+  }
+
+  fetchNonce() {
+    try {
+      return fetch(this.gqlUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({"query": this.NONCE_QUERY, "variables": {"address": this.from}}),
+      })
+        .then(res => res.json())
+        .then(res => {
+          console.log("Nonce fetched");
+
+          let data = ((res["data"])["chainApi"])["nonce"]
+
+          if (data) {
+            let nonce = data as number;
+            return nonce
+          } else {
+            this._parseErrorFromGQLResponse(res)
+          }
+
+        })
+        .catch(reason => {
+          this.isError = true
+          this.errors.push("Error to get nonce for the address")
+          this.errors.push("[Reason] " + reason)
+          throw new Error(reason)
+        })
+    } catch (error) {
+      this.isError = true
+      this.errors.push("Error getting nonce for the account. Please close the dialog and try again")
+      console.log(error)
+      throw error
+    }
   }
 
   submitRawTransansaction(encodedTx) {
@@ -234,210 +372,343 @@ export class AionPay {
         .then(res => res.json())
         .then(res => {
 
-          this.txnResponse = ((res["data"])["txnApi"])["sendRawTransaction"] as TxnResponse
+          let data = ((res["data"])["txnApi"])["sendRawTransaction"]
+
+          if (data)
+            this.txnResponse = data as TxnResponse
+          else { //error
+            this._parseErrorFromGQLResponse(res)
+          }
 
           console.log(this.txnResponse)
 
           this.txnDone = true
 
-        });
-    } catch(error) {
-      // this.txnInProgress = false
+        })
+        .catch(reason => {
+          this.txnDone = true
+          this.isError = true
+          this.errors.push("Error sending the transaction")
+          this.errors.push("[Reason] " + reason)
+          throw new Error(reason)
+        })
+    } catch (error) {
       this.txnDone = true
+      this.isError = true
+      this.errors.push("Error sending the transaction. Please check in the blockchain explorer and try again.")
+      console.log(error)
       throw error
     }
+  }
+
+  _parseErrorFromGQLResponse(res) {
+    let errors = res["errors"] as object[]
+
+    if (errors && errors.length > 0) {
+      this.isError = true
+      this.errors.push((errors[0])["message"])
+    }
+  }
+
+  renderError() {
+
+    return (
+      <div class="error">
+        {this.isError ?
+          <div role="alert" class="c-alert c-alert--warning">
+            <button class="c-button c-button--close" onClick={this.handleHideError}>&times;</button>
+            <ul>
+            {this.errors.map((msg) => <li>{msg}</li>)}
+            </ul>
+          </div> : null
+        }
+      </div>
+    );
+  }
+
+  renderUnlockOptions() {
+    return (
+      <div>
+        {this.unlockBy == 'private_key' ?
+          <div class="o-form-element">
+            <label class="c-label" htmlFor="private_key">Private Key</label>
+            <input id="private_key" placeholder="Private Key" class="c-field" value={this.privateKey}
+                   type="password"
+                   onInput={(e) => this.handlePrivateKeyInput(e)}
+                   onBlur={this.handleDerivePublicKey}
+            />
+          </div> : null
+        }
+
+        {this.unlockBy == 'keystore' ?
+          <div class="o-form-element">
+            <label class="c-label" htmlFor="private_key">Not supported yet.</label>
+          </div> : null
+        }
+
+        {this.unlockBy == 'ledger' ?
+          <div class="o-form-element">
+            <label class="c-label" htmlFor="private_key">Not supported yet.</label>
+          </div> : null
+        }
+      </div>
+    )
+  }
+  
+  renderInputForm() {
+    return (
+
+        <div>
+          <div aria-hidden class="c-overlay c-overlay--visible"></div>
+          <div role="dialog" class="o-modal o-modal--visible">
+            <div class="c-card">
+              <header class="c-card__header">
+                <button type="button" class="c-button c-button--close"
+                        onClick={this.handleHidePaymentDialog}>&times;</button>
+                <div class="aion-heading">
+                  <img src={Constant.aion_logo} class="aion-image"></img>
+                  <h2 class="c-heading"> Transfer AION</h2>
+                </div>
+              </header>
+
+              {this.renderError()}
+
+              <div class="c-card__body o-panel scrolling-container">
+
+                <fieldset class="o-fieldset aion-unlock">
+                  <legend class="o-fieldset__legend">Unlock using</legend>
+                  <div class="o-grid o-grid--demo u-small">
+                    <div class="o-grid__cell">
+                      <div class="o-grid-text">
+                        <label class="c-field c-field--choice">
+                          <input type="radio" name="unlock_by" value="private_key"
+                                 checked={this.unlockBy === 'private_key'}
+                                 onInput={(event) => this.handleUnlockBy(event)}></input>
+                          &nbsp;Private Key
+                        </label>
+                      </div>
+                    </div>
+                    <div class="o-grid__cell">
+                      <div class="o-grid-text">
+                        <label class="c-field c-field--choice">
+                          <input type="radio" name="unlock_by" value="keystore"
+                                 checked={this.unlockBy === 'keystore'}
+                                 onInput={(event) => this.handleUnlockBy(event)}
+                                 disabled
+                          >
+                          </input>
+                          &nbsp;Keystore File
+                        </label>
+                      </div>
+                    </div>
+                    <div class="o-grid__cell">
+                      <div class="o-grid-text">
+                        <label class="c-field c-field--choice">
+                          <input type="radio" name="unlock_by" value="ledger"
+                                 checked={this.unlockBy === 'ledger'}
+                                 onInput={(event) => this.handleUnlockBy(event)}
+                                 disabled
+                          >
+                          </input>
+                          &nbsp;Ledger
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                </fieldset>
+                <fieldset class="o-fieldset">
+
+                  {this.renderUnlockOptions()}
+
+                  <div class="o-form-element">
+                    <label class="c-label" htmlFor="from">From</label>
+                    <input id="from" placeholder="From Address" class="c-field" value={this.from}
+                           onInput={(e) => this.handleFromInput(e)}
+                           readOnly={true} disabled/>
+                    {this.fromBalance ?
+                      <label class="u-xsmall from-balance">Balance: {this.fromBalance} AION</label>:null
+                    }
+                  </div>
+
+                  <div class="o-form-element">
+                    <label class="c-label" htmlFor="to">To</label>
+                    <input id="to" placeholder="To Address"
+                           class="c-field" value={this._to}
+                           onInput={this.handleToInput}/>
+                  </div>
+
+                  <div class="o-form-element">
+                    <label class="c-label" htmlFor="value">Amount</label>
+                    <input id="value" placeholder="Enter amount" class="c-field" value={this.value}
+                           type="number"
+                           onInput={this.handleValueInput}/>
+                  </div>
+                </fieldset>
+
+
+              </div>
+
+              <footer class="c-card__footer">
+                <button type="button" class="c-button c-button--success" onClick={this.signPayment}>Send</button>
+                &nbsp;
+                <button type="button" class="c-button c-button" onClick={this.handleHidePaymentDialog}>Close
+                </button>
+              </footer>
+            </div>
+          </div>
+        </div>
+    )
+  }
+  
+  renderTxnInProgress() {
+    return (
+      <div>
+        <div aria-hidden class="c-overlay c-overlay--visible"></div>
+        <div role="dialog" class="o-modal o-modal--visible">
+          <div class="c-card">
+            <header class="c-card__header">
+              <button type="button" class="c-button c-button--close"
+                      onClick={this.handleHideTransactionInprogressDialog}>&times;</button>
+              <div class="aion-heading">
+                <img src={Constant.aion_logo} class="aion-image"></img>
+                <h2 class="c-heading"> Sending AION</h2>
+              </div>
+            </header>
+
+            {this.renderError()}
+
+            <div class="c-card__body">
+              {!this.txnDone ?
+                <div><i class="fa fa-spinner fa-spin"></i> &nbsp; <i>Sending transaction. Please wait ...</i>
+                </div> :
+                <div>
+                  {this.txnResponse.txHash ?
+                    <span>
+                        Transaction Hash: <a
+                      href={Constant.explorer_base_url + "transaction/" + this.txnResponse.txHash}
+                      target="_blank">{this.txnResponse.txHash}</a>
+                        </span> : <span>Transaction could not be completed</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <footer class="c-card__footer">
+              <button type="button" class="c-button c-button"
+                      onClick={this.handleHideTransactionInprogressDialog}>Close
+              </button>
+            </footer>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  
+  renderShowConfirmation() {
+    return (
+      <div>
+        <div aria-hidden class="c-overlay c-overlay--visible"></div>
+        <div role="dialog" class="o-modal o-modal--visible">
+          <div class="c-card">
+            <header class="c-card__header">
+              <button type="button" class="c-button c-button--close"
+                      onClick={this.handleCloseConfirmDialog}>&times;</button>
+              <div class="aion-heading">
+                <img src={Constant.aion_logo} class="aion-image"></img>
+                <h2 class="c-heading"> Confirm Transaction</h2>
+              </div>
+            </header>
+
+            {this.renderError()}
+
+            <div class="c-card__body confirm-dialog">
+              <div class="o-grid">
+                <div class="o-grid__cell o-grid__cell--width-10">
+                  <div class="o-grid-text">From</div>
+                </div>
+                <div class="o-grid__cell">
+                  <div class="o-grid-text">{this.encodedTxn.input.from}</div>
+                </div>
+              </div>
+              <div class="o-grid">
+                <div class="o-grid__cell o-grid__cell--width-10">
+                  <div class="o-grid-text">To</div>
+                </div>
+                <div class="o-grid__cell">
+                  <div class="o-grid-text">{this.encodedTxn.input.to}</div>
+                </div>
+              </div>
+
+              <div class="o-grid">
+                <div class="o-grid__cell o-grid__cell--width-10">
+                  <div class="o-grid-text">Value</div>
+                </div>
+                <div class="o-grid__cell">
+                  <div class="o-grid-text balance">{CryptoUtil.convertnAmpBalanceToAION(this.encodedTxn.input.value)} AION</div>
+                </div>
+              </div>
+
+              <div class="o-grid">
+                <div class="o-grid__cell o-grid__cell--width-10">
+                  <div class="o-grid-text">Nrg</div>
+                </div>
+                <div class="o-grid__cell">
+                  <div class="o-grid-text">{this.encodedTxn.input.gas}</div>
+                </div>
+              </div>
+
+              <div class="o-grid">
+                <div class="o-grid__cell o-grid__cell--width-10">
+                  <div class="o-grid-text">Nrg Price</div>
+                </div>
+                <div class="o-grid__cell">
+                  <div class="o-grid-text">{this.encodedTxn.input.gasPrice}</div>
+                </div>
+              </div>
+
+              <div class="o-grid">
+                <div class="o-grid__cell o-grid__cell--width-10">
+                  <div class="o-grid-text">Raw Transaction</div>
+                </div>
+                <div class="o-grid__cell">
+                  <div class="o-grid-text">
+                    <textarea class="c-field" rows={7} readonly={true}>{this.encodedTxn.rawTransaction}</textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <footer class="c-card__footer">
+              <button type="button" class="c-button c-button--success" onClick={this.confirmPayment}>Confirm
+              </button>
+            </footer>
+          </div>
+        </div>
+      </div>
+    )
   }
 
 
   render() {
     return (
-      <div class="u-text o-panel-container">
+      <div class="u-text u-small o-panel-container">
 
-        {this.visible?
-          <div>
-            <div aria-hidden class="c-overlay c-overlay--visible"></div>
-            <div role="dialog" class="o-modal o-modal--visible">
-              <div class="c-card">
-                <header class="c-card__header">
-                  <button type="button" class="c-button c-button--close"
-                          onClick={this.handleHidePaymentDialog}>&times;</button>
-                  <div class="aion-heading">
-                    <img src={Constant.aion_logo} class="aion-image"></img>
-                    <h2 class="c-heading"> Transfer AION</h2>
-                  </div>
-                </header>
-
-                <div class="c-card__body">
-                  <fieldset class="o-fieldset aion-unlock">
-                    <legend class="o-fieldset__legend">Unlock using</legend>
-                    <div class="o-grid o-grid--demo u-small">
-                      <div class="o-grid__cell">
-                        <div class="o-grid-text">
-                          <label class="c-field c-field--choice">
-                            <input type="radio" name="unlock_by" value="private_key"
-                                   checked={this.unlockBy === 'private_key'}
-                                   onInput={(event) => this.handleUnlockBy(event)}></input>
-                            &nbsp;Private Key
-                          </label>
-                        </div>
-                      </div>
-                      <div class="o-grid__cell" >
-                        <div class="o-grid-text">
-                          <label class="c-field c-field--choice">
-                            <input type="radio" name="unlock_by" value="keystore"
-                                   checked={this.unlockBy === 'keystore'}
-                                   onInput={(event) => this.handleUnlockBy(event)}
-                                   disabled
-                            >
-                            </input>
-                            &nbsp;Keystore File
-                          </label>
-                        </div>
-                      </div>
-                      <div class="o-grid__cell">
-                        <div class="o-grid-text">
-                          <label class="c-field c-field--choice">
-                            <input type="radio" name="unlock_by" value="ledger"
-                                   checked={this.unlockBy === 'ledger'}
-                                   onInput={(event) => this.handleUnlockBy(event)}
-                                   disabled
-                            >
-                            </input>
-                            &nbsp;Ledger
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                  </fieldset>
-                  <fieldset class="o-fieldset">
-
-                    {this.unlockBy == 'private_key' ?
-                      <div class="o-form-element">
-                        <label class="c-label" htmlFor="private_key">Private Key</label>
-                        <input id="private_key" placeholder="Private Key" class="c-field" value={this.privateKey}
-                               type="password"
-                               onInput={(e) => this.handlePrivateKeyInput(e)}
-                               onBlur={this.handleDerivePublicKey}
-                        />
-                      </div>:null
-                    }
-
-                    {this.unlockBy == 'keystore' ?
-                      <div class="o-form-element">
-                        <label class="c-label" htmlFor="private_key">Not supported yet.</label>
-                      </div>:null
-                    }
-
-                    {this.unlockBy == 'ledger' ?
-                      <div class="o-form-element">
-                        <label class="c-label" htmlFor="private_key">Not supported yet.</label>
-                      </div>:null
-                    }
-
-                    <div class="o-form-element">
-                      <label class="c-label" htmlFor="from">From</label>
-                      <input id="from" placeholder="From Address" class="c-field" value={this.from} onInput={(e) => this.handleFromInput(e)}
-                             readonly="true" disabled/>
-                    </div>
-
-                    <div class="o-form-element">
-                      <label class="c-label" htmlFor="to">To</label>
-                      <input id="to" placeholder="To Address" class="c-field" value={this._to}/>
-                    </div>
-
-                    <div class="o-form-element">
-                      <label class="c-label" htmlFor="value">Amount</label>
-                      <input id="value" placeholder="Enter amount" class="c-field" value={this.value}
-                             type="number"
-                             onInput={this.handleValueInput}/>
-                    </div>
-                  </fieldset>
-                </div>
-
-                <footer class="c-card__footer">
-                  <button type="button" class="c-button c-button--brand" onClick={this.signPayment}>Send</button>&nbsp;
-                  <button type="button" class="c-button c-button--brand" onClick={this.handleHidePaymentDialog}>Close
-                  </button>
-                </footer>
-              </div>
-            </div>
-          </div> : <div></div>
+        {this.visible ?
+          this.renderInputForm():null
         }
 
         {this.txnInProgress ?
-          <div>
-            <div aria-hidden class="c-overlay c-overlay--visible"></div>
-            <div role="dialog" class="o-modal o-modal--visible">
-              <div class="c-card">
-                <header class="c-card__header">
-                  <button type="button" class="c-button c-button--close"
-                          onClick={this.handleHideTransactionInprogressDialog}>&times;</button>
-                  <h2 class="c-heading">Sending AION</h2>
-                </header>
-
-                <div class="c-card__body">
-                  {!this.txnDone ?
-                    <div><i class="fa fa-spinner fa-spin"></i> &nbsp; <i>Sending transaction. Please wait ...</i></div>:
-                    <div>
-                      Transaction Hash: <a href={Constant.explorer_base_url + "transaction/" + this.txnResponse.txHash} target="_blank">{this.txnResponse.txHash}</a>
-                    </div>
-                  }
-                </div>
-
-                <footer class="c-card__footer">
-                  <button type="button" class="c-button c-button--brand" onClick={this.handleHideTransactionInprogressDialog}>Close
-                  </button>
-                </footer>
-              </div>
-            </div>
-          </div> : <div></div>
+          this.renderTxnInProgress() : <div></div>
         }
 
         {this.showConfirm ?
-          <div>
-            <div aria-hidden class="c-overlay c-overlay--visible"></div>
-            <div role="dialog" class="o-modal o-modal--visible">
-              <div class="c-card">
-                <header class="c-card__header">
-                  <button type="button" class="c-button c-button--close"
-                          onClick={this.handleCloseConfirmDialog}>&times;</button>
-                  <h2 class="c-heading">Confirm Transaction</h2>
-                </header>
-
-                <div class="c-card__body">
-                  <div>
-                    From: {this.encodedTxn.input.from}
-                  </div>
-                  <div>
-                    To: {this.encodedTxn.input.to}
-                  </div>
-                  <div>
-                    Value: {this.encodedTxn.input.value / Math.pow(10, 18)}
-                  </div>
-                  <div>
-                    Gas: {this.encodedTxn.input.gas}
-                  </div>
-                  <div>
-                    Gas Price: {this.encodedTxn.input.gasPrice}
-                  </div>
-                  <div>
-                  Raw Txn: {this.encodedTxn.rawTransaction}
-                  </div>
-                </div>
-
-                <footer class="c-card__footer">
-                  <button type="button" class="c-button c-button--brand" onClick={this.confirmPayment}>Confirm
-                  </button>
-                </footer>
-              </div>
-            </div>
-          </div> : <div></div>
+           this.renderShowConfirmation() : null
         }
 
         <button type="button" class="c-button pay-button .u-high" onClick={this.handleShowPaymentDialog}>
           <slot>
-            Pay By <img src={Constant.aion_logo} class="img-valign"></img>
+            <span class="pay-button-text"><img src={Constant.aion_logo} class="img-valign"></img>Pay</span>
           </slot>
         </button>
       </div>

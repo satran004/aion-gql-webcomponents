@@ -34,8 +34,38 @@
     width: 20px;
     height: 20px;
   }
+
+  .pay-button-text {
+    font-weight: bolder;
+    font-style: italic;
+    font-family: "Courier New";
+  }
 }
 
 .aion-unlock {
    display: inline;
+}
+
+.error {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.scrolling-container {
+  height: 400px;
+}
+
+.from-balance {
+  font-weight: bold;
+  color: #304FFE;
+}
+
+.confirm-dialog {
+  .o-grid {
+    margin-top: 10px;
+  }
+
+  .balance {
+    font-weight: bold;
+  }
 }
