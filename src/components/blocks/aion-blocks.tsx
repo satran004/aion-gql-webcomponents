@@ -87,7 +87,7 @@ export class AionBlocks {
             <div class="c-card__item c-card__item--brand">#{blk.number}
             <span class="title u-small">{blk.date.toDateString()} {blk.date.toLocaleTimeString()}</span>
               <div class="u-small">
-                <a href={"https://mainnet.aion.network/#/block/" + blk.hash} target="_blank">
+                <a href={"https://mainnet.aion.network/#/block/" + blk.number} target="_blank">
                   <i> 0x{blk.hash}&nbsp;</i>
                 </a>
               </div>
