@@ -11,6 +11,9 @@
 <script src="https://unpkg.com/aion-gql-webcomponents@x.x.x/dist/aion-gql-webcomponents.js"></script>
 ```
 
+### Webcomponents
+1. aion-blocks : Shows recent AION mainnet blocks
+2. aion-pay: Supports payment in AION coin
 
 ### Use aion-blocks component 
 
