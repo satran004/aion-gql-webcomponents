@@ -25,14 +25,16 @@ Example:
 ### Use aion-pay component 
 A webcomponent to support payment using AION coin. A sender account can be accessed by providing private key or AION keystore file. 
 
-Use one of the following way for aion-pay compnent
+If "to" property is mentioned, the payment can only be done to the mentioned address. To enable send to any address, don't provide "to" address in the tag.
+
+Usage:
 
 1. Default button. Pay to a given address
 ```
 <aion-pay to="to_address" gql-url="https://<aion-gql-host>/graphql"></aion-pay>
 ```
 
-2. To pay to any address, don't provide to props.
+2. To pay to any address, don't provide "to" property.
 
 ```
 <aion-pay gql-url="https://<aion-gql-host>/graphql"></aion-pay>
@@ -48,15 +50,33 @@ Use one of the following way for aion-pay compnent
 <aion-pay to="to_address" gql-url="https://<aion-gql-host>/graphql">[custom content]</aion-pay>
 ```
 
+Examples:
 
-
-
-
-Example:
 ```
 <aion-pay to="0xa01112158d69a368dfebb9db63a903738cxxxxxxxxx" gql-url="http://localhost:8080/graphql"></aion-pay>
 <aion-pay gql-url="http://localhost:8080/graphql"></aion-pay>
 <aion-pay to="0xa01112158d69a368dfebb9db63a903738cxxxxxxxxx" gql-url="http://localhost:8080/graphql">Pay By AION</aion-pay>
+```
+
+Styles:
+
+Aion Pay component also exposes few style variables which can be used to customize the style of the component. Example: button color, button font family etc.
+
+```
+--pay-button-color: <button_background_color>;
+--pay-button-font-weight: <button font weight>;
+--pay-button-font-family: <font family for the button text>;
+--pay-button-font-style: <button font stye>;
+```
+Example:
+```
+<style type="text/css">
+aion-pay {
+  --pay-button-color: #BB86FC;
+  --pay-button-font-weight: bolder;
+  --pay-button-font-family: "Comic Sans MS", "Comic Sans", cursive;
+  --pay-button-font-style: normal;
+}
 ```
 
 ## Development
