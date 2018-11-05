@@ -16,15 +16,15 @@ import {KeyStoreUtil} from "../../common/KeyStoreUtil";
 })
 export class AionPay {
 
-  @Prop() to: string;
+  @Prop() to: string
 
-  // @Prop() from: string;
-
-  @Prop() gqlUrl: string;
+  @Prop() gqlUrl: string
 
   @Prop() buttonText: string
 
   default_button_text: string = "Pay"
+
+  to_readonly: boolean = false
 
   @State() unlockBy: string = "private_key"
 
@@ -122,7 +122,8 @@ export class AionPay {
     if (this.to)
       this._to = this.to.toLowerCase()
 
-    console.log("Inside component will load");
+    if(this.to)
+      this.to_readonly = true
   }
 
   handleShowPaymentDialog() {
@@ -681,7 +682,9 @@ export class AionPay {
                   <label class="c-label" htmlFor="to">To</label>
                   <input id="to" placeholder="To Address"
                          class="c-field" value={this._to}
-                         onInput={this.handleToInput}/>
+                         onInput={this.handleToInput}
+                         readonly={this.to_readonly}
+                  />
                 </div>
 
                 <div class="o-form-element">
