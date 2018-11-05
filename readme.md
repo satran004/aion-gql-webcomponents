@@ -12,7 +12,7 @@
 ```
 
 ### Webcomponents
-1. aion-blocks : Shows recent AION mainnet blocks
+1. aion-blocks: Shows recent AION mainnet blocks
 2. aion-pay: Supports payment in AION coin
 
 ### Use aion-blocks component 
