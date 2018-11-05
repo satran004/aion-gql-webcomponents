@@ -77,6 +77,8 @@ aion-pay {
   --pay-button-font-family: "Comic Sans MS", "Comic Sans", cursive;
   --pay-button-font-style: normal;
 }
+</style>
+
 ```
 
 ## Development
