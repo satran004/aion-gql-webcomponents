@@ -729,7 +729,7 @@ export class AionPay {
 
             <div class="c-card__body">
               {!this.txnDone ?
-                <div><i class="fa fa-spinner fa-spin"></i> &nbsp; <i>Sending transaction. Please wait ...</i>
+                <div><div class="loader">Loading ...</div> &nbsp; <i>Sending transaction and waiting for at least one block confirmation. Please wait ...</i>
                 </div> :
                 <div>
                   {this.txnResponse.txHash ?

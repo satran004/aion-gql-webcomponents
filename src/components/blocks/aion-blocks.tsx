@@ -86,10 +86,10 @@ export class AionBlocks {
           <div  class="c-card u-highest">
             <div class="c-card__item c-card__item--brand">#{blk.number}
             <span class="title u-small">{blk.date.toDateString()} {blk.date.toLocaleTimeString()}</span>
-              <div class="u-small"><i> 0x{blk.hash}&nbsp;
+              <div class="u-small">
                 <a href={"https://mainnet.aion.network/#/block/" + blk.hash} target="_blank">
-                <i class="fas fa-arrow-alt-circle-right"></i>
-                </a></i>
+                  <i> 0x{blk.hash}&nbsp;</i>
+                </a>
               </div>
             </div>
 
