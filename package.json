@@ -37,6 +37,12 @@
     "type": "git",
     "url": "git+https://github.com/satran004/aion-gql-webcomponents.git"
   },
+  "keywords": [
+    "aion",
+    "webcomponents",
+    "aion webcomponents",
+    "aion graphql webcomponents"
+  ],
   "author": "Satya",
   "license": "MIT",
   "bugs": {
