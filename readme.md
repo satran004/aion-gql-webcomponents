@@ -22,11 +22,36 @@ Example:
 <aion-blocks limit="8" duration="10" gql-url="https://<host>/graphql"></aion-blocks>
 ```
 
-### Use aion-blocks component 
+### Use aion-pay component 
+A webcomponent to support payment using AION coin. A sender account can be accessed by providing private key or AION keystore file. 
+
+Use one of the following way for aion-pay compnent
+
+1. Default button. Pay to a given address
+```
+<aion-pay to="to_address" gql-url="https://<aion-gql-host>/graphql"></aion-pay>
+```
+
+2. To pay to any address, don't provide to props.
 
 ```
-<aion-pay to="to_address" gql-url="https://<aion-gql-host>/graphql">[Customized text]</aion-pay>
+<aion-pay gql-url="https://<aion-gql-host>/graphql"></aion-pay>
 ```
+
+3. With a custom text but with aion icon on the button. Pay to a given address.
+```
+<aion-pay to="to_address" gql-url="https://<aion-gql-host>/graphql" button-text=[custom_text]></aion-pay>
+```
+
+4. With a custom content in the pay button. It will override both default icon and text.
+```
+<aion-pay to="to_address" gql-url="https://<aion-gql-host>/graphql">[custom content]</aion-pay>
+```
+
+
+
+
+
 Example:
 ```
 <aion-pay to="0xa01112158d69a368dfebb9db63a903738cxxxxxxxxx" gql-url="http://localhost:8080/graphql"></aion-pay>
