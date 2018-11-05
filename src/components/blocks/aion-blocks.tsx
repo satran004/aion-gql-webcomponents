@@ -43,10 +43,16 @@ export class AionBlocks {
   componentDidLoad() {
     this.fetchBlocks();
 
+    let duration = this.duration;
+
+    //Less than 10 sec should not be allowed
+    if(this.duration < 10)
+      duration = 10;
+
     setInterval(() => {
       this.fetchBlocks();
 
-    }, this.duration * 1000);
+    }, duration * 1000);
   }
 
   private fetchBlocks() {
