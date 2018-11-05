@@ -22,6 +22,18 @@ Example:
 <aion-blocks limit="8" duration="10" gql-url="https://<host>/graphql"></aion-blocks>
 ```
 
+### Use aion-blocks component 
+
+```
+<aion-pay to="to_address" gql-url="https://<aion-gql-host>/graphql">[Customized text]</aion-pay>
+```
+Example:
+```
+<aion-pay to="0xa01112158d69a368dfebb9db63a903738cxxxxxxxxx" gql-url="http://localhost:8080/graphql"></aion-pay>
+<aion-pay gql-url="http://localhost:8080/graphql"></aion-pay>
+<aion-pay to="0xa01112158d69a368dfebb9db63a903738cxxxxxxxxx" gql-url="http://localhost:8080/graphql">Pay By AION</aion-pay>
+```
+
 ## Development
 
 ```

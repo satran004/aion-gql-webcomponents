@@ -1,9 +1,12 @@
 @import '../../global/variables.scss';
 
+button {
+  cursor: var(--pay-button-cursor, pointer);
+}
+
 .aion-image {
   width: 40px;
   height: 40px;
-
 }
 
 .aion-heading {
@@ -21,14 +24,15 @@
   }
 }
 
+
 .pay-button {
   display: inline-block;
-  background-color: #3700B3;
+  //background-color: #3700B3;
   text-align: center;
 }
 
 .pay-button {
-  background-color:  #BB86FC;
+  background-color:  var(--pay-button-color, #BB86FC);
   .img-valign {
     vertical-align: middle;
     width: 20px;
@@ -36,9 +40,9 @@
   }
 
   .pay-button-text {
-    font-weight: bolder;
-    font-style: italic;
-    font-family: "Courier New";
+    font-weight: var(--pay-button-font-weight, bolder);
+    font-style: var(--pay-button-font-style, italic);
+    font-family: var(--pay-button-font-family, "Courier New");
   }
 }
 
@@ -67,5 +71,21 @@
 
   .balance {
     font-weight: bold;
+  }
+}
+
+.keystore-input {
+  .o-field {
+    margin-right: 20px;
+  }
+
+  .c-field {
+    border-top-left-radius: 4px !important;
+    border-bottom-left-radius: 4px !important;
+    border-left-width: 1px !important;
+  }
+
+  .c-progress {
+    margin-top: 5px;
   }
 }

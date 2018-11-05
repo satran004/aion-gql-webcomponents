@@ -24,10 +24,12 @@ export namespace Components {
   }
 
   interface AionPay {
+    'buttonText': string;
     'gqlUrl': string;
     'to': string;
   }
   interface AionPayAttributes extends StencilHTMLAttributes {
+    'buttonText'?: string;
     'gqlUrl'?: string;
     'to'?: string;
   }

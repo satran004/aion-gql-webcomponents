@@ -13,6 +13,11 @@ export class TransactionUtil {
   public static signTransaction(transaction: Transaction, privateKey: string) {
     const txArray = new Array()
 
+    if(privateKey) {
+      if(privateKey.startsWith("0x"))
+        privateKey = privateKey.substring(2)
+    }
+
     if(transaction.to) {
       transaction.to = transaction.to.toLowerCase()
 

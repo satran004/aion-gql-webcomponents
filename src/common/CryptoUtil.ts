@@ -11,7 +11,7 @@ export class CryptoUtil {
     return out;
   }
 
-  public static uia2hex(arrayBuffer) {
+  public static uia2hex(arrayBuffer, ignorePrefix = false) {
     if (typeof arrayBuffer !== 'object' || arrayBuffer === null || typeof arrayBuffer.byteLength !== 'number') {
       throw new TypeError('Expected input to be an ArrayBuffer')
     }
@@ -25,7 +25,9 @@ export class CryptoUtil {
       result += (value.length === 1 ? '0' + value : value)
     }
 
-    result = "0x" + result;
+    if(!ignorePrefix)
+      result = "0x" + result;
+
     return result
   }
 

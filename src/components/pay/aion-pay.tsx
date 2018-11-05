@@ -1,10 +1,13 @@
+import '../../global/global.js'
+
 import {Component, Prop, State} from '@stencil/core';
+import {Constant} from "../../common/Constant";
 import {TransactionUtil} from "../../common/TransactionUtil";
 import {Transaction} from "../../common/Transaction";
 import {TxnResponse} from "../../common/TxnResponse";
-import {Constant} from "../../common/Constant";
 import {SignedTransaction} from "../../common/SignedTransaction";
 import {CryptoUtil} from "../../common/CryptoUtil";
+import {KeyStoreUtil} from "../../common/KeyStoreUtil";
 
 @Component({
   tag: 'aion-pay',
@@ -18,6 +21,10 @@ export class AionPay {
   // @Prop() from: string;
 
   @Prop() gqlUrl: string;
+
+  @Prop() buttonText: string
+
+  default_button_text: string = "Pay"
 
   @State() unlockBy: string = "private_key"
 
@@ -42,6 +49,10 @@ export class AionPay {
   @State() value: number
 
   @State() privateKey: string
+
+  keystore: any
+  @State() keystore_password: string //only for keystore based access
+  @State() keystoreLoadingPercentage: number = 0
 
   @State() gas: number
 
@@ -97,8 +108,13 @@ export class AionPay {
     this.handleToInput = this.handleToInput.bind(this)
     this.handleValueInput = this.handleValueInput.bind(this)
     this.handlePrivateKeyInput = this.handlePrivateKeyInput.bind(this)
+    this.handleKeyStoreFileSelected = this.handleKeyStoreFileSelected.bind(this)
+    this.handleKeystorePasswordInput = this.handleKeystorePasswordInput.bind(this)
+    this.handleUnlockKeystore = this.handleUnlockKeystore.bind(this)
+
     this.handleDerivePublicKey = this.handleDerivePublicKey.bind(this)
     this.submitRawTransansaction = this.submitRawTransansaction.bind(this)
+
   }
 
 
@@ -140,14 +156,25 @@ export class AionPay {
     this.txnDone = false
     this.visible = false
 
-    this.from = ''
-    this.fromBalance = null
+    this.resetFromAddressData()
     this.value = 0
-    this.privateKey = ''
     this.gas = 0
     this.gasPrice = 0
 
+    //sensitive info. keystore loading
+
     this.resetTxnResponse()
+  }
+
+  private resetFromAddressData() {
+    this.from = ''
+    this.fromBalance = null
+    this.privateKey = ''
+
+    this.privateKey = ''
+    this.keystore_password = ''
+    this.keystore = null
+    this.keystoreLoadingPercentage = 0
   }
 
   private resetTxnResponse() {
@@ -159,7 +186,11 @@ export class AionPay {
   }
 
   handleUnlockBy(event) {
-    this.unlockBy = event.target.value;
+    let oldValue = this.unlockBy
+    this.unlockBy = event.target.value
+
+    if(oldValue != this.unlockBy) //Only reset if it's a different selection
+      this.resetFromAddressData()
   }
 
   handleToInput(event) {
@@ -195,6 +226,11 @@ export class AionPay {
   }
 
   handleDerivePublicKey() {
+
+    //If private key field is empty. just return. It will be checked again while sending the transaction.
+    if(!this.privateKey || this.privateKey.trim().length == 0)
+      return
+
     try {
       this.handleHideError()
       let address = TransactionUtil.getAddress(this.privateKey)
@@ -215,21 +251,68 @@ export class AionPay {
     }
   }
 
+  /** For keystore unlock mode **/
+  handleKeyStoreFileSelected(event) {
+    this.resetFromAddressData()
+    this.keystore = event.srcElement.files[0]
+  }
+
+  handleKeystorePasswordInput(event) {
+    this.keystore_password = event.target.value;
+  }
+
+  handleUnlockKeystore() {
+
+    let reader = new FileReader()
+
+    try {
+      reader.readAsArrayBuffer(this.keystore)
+    } catch (error) {
+      console.error("Error loading keystore file" + error)
+      this.isError = true
+      this.errors.push("Invalid keystore file. " + error.toString())
+    }
+
+    let me = this;
+    reader.onload = function () {
+      let content = reader.result;
+
+      me.handleHideError()
+
+      KeyStoreUtil.unlock(content as ArrayBuffer, me.keystore_password, (progress) => {
+        me.keystoreLoadingPercentage = Math.round(progress)
+      }, (_address, privateKey) => {
+        me.privateKey = privateKey
+        me.handleDerivePublicKey()
+      }, (error) => {
+        console.log("Error in opening keystore fie. " + error)
+        me.isError = true
+        me.errors.push("Could not open the keystore file. " + error.toString())
+      });
+    }
+  }
+
+  /** keystore unlock mode ends here **/
+
   validateInput() {
 
     this.handleHideError()
 
-    if(isNaN(this.value)) {
+    if (isNaN(this.value)) {
       this.isError = true
       this.errors.push("Amount is not valid")
     }
 
-    if(!this.privateKey || this.privateKey.trim().length == 0) {
+    if (!this.privateKey || this.privateKey.trim().length == 0) {
       this.isError = true
-      this.errors.push("Private key can not be empty")
+
+      if(this.unlockBy == 'private_key')
+        this.errors.push("Private key can not be empty")
+      else if(this.unlockBy == 'keystore')
+        this.errors.push("Please provide a keystore file and unlock it")
     }
 
-    if(!this._to || this._to.trim().length == 0) {
+    if (!this._to || this._to.trim().length == 0) {
       this.isError = true
       this.errors.push("To address can not be empty")
     }
@@ -240,14 +323,14 @@ export class AionPay {
   async signPayment(e) {
     e.preventDefault()
 
-    if(!this.validateInput()) {
+    if (!this.validateInput()) {
       console.log('not a valid input')
       return
     }
 
     console.log("All valid input")
 
-    if(!this._to) {
+    if (!this._to) {
       this.handleDerivePublicKey()
     }
 
@@ -418,7 +501,7 @@ export class AionPay {
           <div role="alert" class="c-alert c-alert--warning">
             <button class="c-button c-button--close" onClick={this.handleHideError}>&times;</button>
             <ul>
-            {this.errors.map((msg) => <li>{msg}</li>)}
+              {this.errors.map((msg) => <li>{msg}</li>)}
             </ul>
           </div> : null
         }
@@ -427,6 +510,7 @@ export class AionPay {
   }
 
   renderUnlockOptions() {
+
     return (
       <div>
         {this.unlockBy == 'private_key' ?
@@ -441,9 +525,7 @@ export class AionPay {
         }
 
         {this.unlockBy == 'keystore' ?
-          <div class="o-form-element">
-            <label class="c-label" htmlFor="private_key">Not supported yet.</label>
-          </div> : null
+          this._renderUnlockByKeystore() : null
         }
 
         {this.unlockBy == 'ledger' ?
@@ -454,113 +536,177 @@ export class AionPay {
       </div>
     )
   }
-  
+
+  _renderUnlockByKeystore() {
+    var ks_unlock_progressStyle = {
+      width: this.keystoreLoadingPercentage + '%',
+    };
+
+    // var inProgress = this.keystoreLoadingPercentage && this.keystoreLoadingPercentage != 0 && this.keystoreLoadingPercentage != 100
+
+    return (
+      <div class="o-form-element keystore-input">
+        <div class="c-input-group">
+          <div class="o-field">
+            <label class="c-label" htmlFor="private_key">Key Store File</label>
+            <input id="file-upload"
+                   type="file"
+                   accept="*"
+                   onChange={(e) => this.handleKeyStoreFileSelected(e)}>
+            </input>
+          </div>
+          <div class="o-field">
+            <label class="c-label" htmlFor="keystore_password">Passowrd</label>
+            <input id="keystore_password"
+                   type="password"
+                   class="c-field"
+                   value={this.keystore_password}
+                   onInput={this.handleKeystorePasswordInput}
+            ></input>
+          </div>
+          <div class="o-field">
+            <label class="c-label" htmlFor="unlock_button">&nbsp;</label>
+            <button name="unlock_button" type="button"
+                    class="c-button c-button--success"
+                    onClick={this.handleUnlockKeystore}
+
+            >Unlock
+            </button>
+          </div>
+        </div>
+
+        {this.keystoreLoadingPercentage && this.keystoreLoadingPercentage != 0 && this.keystoreLoadingPercentage != 100 ?
+          <div role="dialog" class="o-modal o-modal o-modal--visible">
+            <div class="c-card">
+              <header class="c-card__header">
+                <h2 class="c-heading">Unlocking Keystore ...</h2>
+              </header>
+
+              <div class="c-card__body">
+                <div class="c-progress u-xsmall">
+                  <div role="progressbar" aria-valuetext={this.keystoreLoadingPercentage + "% complete"}
+                       aria-valuenow={this.keystoreLoadingPercentage} aria-valuemin="0"
+                       aria-valuemax="100"
+                       style={ks_unlock_progressStyle}
+                       class="c-progress__bar">
+                    {this.keystoreLoadingPercentage + "%"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          : null
+        }
+
+      </div>
+    )
+  }
+
   renderInputForm() {
     return (
 
-        <div>
-          <div aria-hidden class="c-overlay c-overlay--visible"></div>
-          <div role="dialog" class="o-modal o-modal--visible">
-            <div class="c-card">
-              <header class="c-card__header">
-                <button type="button" class="c-button c-button--close"
-                        onClick={this.handleHidePaymentDialog}>&times;</button>
-                <div class="aion-heading">
-                  <img src={Constant.aion_logo} class="aion-image"></img>
-                  <h2 class="c-heading"> Transfer AION</h2>
-                </div>
-              </header>
-
-              {this.renderError()}
-
-              <div class="c-card__body o-panel scrolling-container">
-
-                <fieldset class="o-fieldset aion-unlock">
-                  <legend class="o-fieldset__legend">Unlock using</legend>
-                  <div class="o-grid o-grid--demo u-small">
-                    <div class="o-grid__cell">
-                      <div class="o-grid-text">
-                        <label class="c-field c-field--choice">
-                          <input type="radio" name="unlock_by" value="private_key"
-                                 checked={this.unlockBy === 'private_key'}
-                                 onInput={(event) => this.handleUnlockBy(event)}></input>
-                          &nbsp;Private Key
-                        </label>
-                      </div>
-                    </div>
-                    <div class="o-grid__cell">
-                      <div class="o-grid-text">
-                        <label class="c-field c-field--choice">
-                          <input type="radio" name="unlock_by" value="keystore"
-                                 checked={this.unlockBy === 'keystore'}
-                                 onInput={(event) => this.handleUnlockBy(event)}
-                                 disabled
-                          >
-                          </input>
-                          &nbsp;Keystore File
-                        </label>
-                      </div>
-                    </div>
-                    <div class="o-grid__cell">
-                      <div class="o-grid-text">
-                        <label class="c-field c-field--choice">
-                          <input type="radio" name="unlock_by" value="ledger"
-                                 checked={this.unlockBy === 'ledger'}
-                                 onInput={(event) => this.handleUnlockBy(event)}
-                                 disabled
-                          >
-                          </input>
-                          &nbsp;Ledger
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                </fieldset>
-                <fieldset class="o-fieldset">
-
-                  {this.renderUnlockOptions()}
-
-                  <div class="o-form-element">
-                    <label class="c-label" htmlFor="from">From</label>
-                    <input id="from" placeholder="From Address" class="c-field" value={this.from}
-                           onInput={(e) => this.handleFromInput(e)}
-                           readOnly={true} disabled/>
-                    {this.fromBalance ?
-                      <label class="u-xsmall from-balance">Balance: {this.fromBalance} AION</label>:null
-                    }
-                  </div>
-
-                  <div class="o-form-element">
-                    <label class="c-label" htmlFor="to">To</label>
-                    <input id="to" placeholder="To Address"
-                           class="c-field" value={this._to}
-                           onInput={this.handleToInput}/>
-                  </div>
-
-                  <div class="o-form-element">
-                    <label class="c-label" htmlFor="value">Amount</label>
-                    <input id="value" placeholder="Enter amount" class="c-field" value={this.value}
-                           type="number"
-                           onInput={this.handleValueInput}/>
-                  </div>
-                </fieldset>
-
-
+      <div>
+        <div aria-hidden class="c-overlay c-overlay--visible"></div>
+        <div role="dialog" class="o-modal o-modal--visible">
+          <div class="c-card">
+            <header class="c-card__header">
+              <button type="button" class="c-button c-button--close"
+                      onClick={this.handleHidePaymentDialog}>&times;</button>
+              <div class="aion-heading">
+                <img src={Constant.aion_logo} class="aion-image"></img>
+                <h2 class="c-heading"> Transfer AION</h2>
               </div>
+            </header>
 
-              <footer class="c-card__footer">
-                <button type="button" class="c-button c-button--success" onClick={this.signPayment}>Send</button>
-                &nbsp;
-                <button type="button" class="c-button c-button" onClick={this.handleHidePaymentDialog}>Close
-                </button>
-              </footer>
+            {this.renderError()}
+
+            <div class="c-card__body o-panel scrolling-container">
+
+              <fieldset class="o-fieldset aion-unlock">
+                <legend class="o-fieldset__legend">Unlock using</legend>
+                <div class="o-grid o-grid--demo u-small">
+                  <div class="o-grid__cell">
+                    <div class="o-grid-text">
+                      <label class="c-field c-field--choice">
+                        <input type="radio" name="unlock_by" value="private_key"
+                               checked={this.unlockBy === 'private_key'}
+                               onClick={(event) => this.handleUnlockBy(event)}></input>
+                        &nbsp;Private Key
+                      </label>
+                    </div>
+                  </div>
+                  <div class="o-grid__cell">
+                    <div class="o-grid-text">
+                      <label class="c-field c-field--choice">
+                        <input type="radio" name="unlock_by" value="keystore"
+                               checked={this.unlockBy === 'keystore'}
+                               onClick={(event) => this.handleUnlockBy(event)}
+                        >
+                        </input>
+                        &nbsp;Keystore File
+                      </label>
+                    </div>
+                  </div>
+                  <div class="o-grid__cell">
+                    <div class="o-grid-text">
+                      <label class="c-field c-field--choice">
+                        <input type="radio" name="unlock_by" value="ledger"
+                               checked={this.unlockBy === 'ledger'}
+                               onClick={(event) => this.handleUnlockBy(event)}
+                               disabled
+                        >
+                        </input>
+                        &nbsp;Ledger
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+              </fieldset>
+              <fieldset class="o-fieldset">
+
+                {this.renderUnlockOptions()}
+
+                <div class="o-form-element">
+                  <label class="c-label" htmlFor="from">From</label>
+                  <input id="from" placeholder="From Address" class="c-field" value={this.from}
+                         onInput={(e) => this.handleFromInput(e)}
+                         readOnly={true} disabled/>
+                  {this.fromBalance ?
+                    <label class="u-xsmall from-balance">Balance: {this.fromBalance} AION</label> : null
+                  }
+                </div>
+
+                <div class="o-form-element">
+                  <label class="c-label" htmlFor="to">To</label>
+                  <input id="to" placeholder="To Address"
+                         class="c-field" value={this._to}
+                         onInput={this.handleToInput}/>
+                </div>
+
+                <div class="o-form-element">
+                  <label class="c-label" htmlFor="value">Amount</label>
+                  <input id="value" placeholder="Enter amount" class="c-field" value={this.value}
+                         type="number"
+                         onInput={this.handleValueInput}/>
+                </div>
+              </fieldset>
+
+
             </div>
+
+            <footer class="c-card__footer">
+              <button type="button" class="c-button c-button--success" onClick={this.signPayment}>Send</button>
+              &nbsp;
+              <button type="button" class="c-button c-button" onClick={this.handleHidePaymentDialog}>Close
+              </button>
+            </footer>
           </div>
         </div>
+      </div>
     )
   }
-  
+
   renderTxnInProgress() {
     return (
       <div>
@@ -604,7 +750,7 @@ export class AionPay {
       </div>
     )
   }
-  
+
   renderShowConfirmation() {
     return (
       <div>
@@ -645,7 +791,9 @@ export class AionPay {
                   <div class="o-grid-text">Value</div>
                 </div>
                 <div class="o-grid__cell">
-                  <div class="o-grid-text balance">{CryptoUtil.convertnAmpBalanceToAION(this.encodedTxn.input.value)} AION</div>
+                  <div
+                    class="o-grid-text balance">{CryptoUtil.convertnAmpBalanceToAION(this.encodedTxn.input.value)} AION
+                  </div>
                 </div>
               </div>
 
@@ -695,7 +843,7 @@ export class AionPay {
       <div class="u-text u-small o-panel-container">
 
         {this.visible ?
-          this.renderInputForm():null
+          this.renderInputForm() : null
         }
 
         {this.txnInProgress ?
@@ -703,12 +851,15 @@ export class AionPay {
         }
 
         {this.showConfirm ?
-           this.renderShowConfirmation() : null
+          this.renderShowConfirmation() : null
         }
 
         <button type="button" class="c-button pay-button .u-high" onClick={this.handleShowPaymentDialog}>
           <slot>
-            <span class="pay-button-text"><img src={Constant.aion_logo} class="img-valign"></img>Pay</span>
+            <span class="pay-button-text">
+              <img src={Constant.aion_logo} class="img-valign"></img>
+              {this.buttonText? this.buttonText: this.default_button_text}
+            </span>
           </slot>
         </button>
       </div>
