@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0">
   <title>AION GQL Webcomponents - Showcase</title>
   <script src="https://unpkg.com/aion-gql-webcomponents@x.x.x/dist/aion-gql-webcomponents.js"></script>
+
+  <style type="text/css">
+    .my-color {
+      color: blue;
+    }
+
+    #donate {
+      --pay-button-color: #AA00FF;
+      --pay-button-font-family: "Comic Sans MS", "Comic Sans", cursive;
+      --pay-button-font-style: normal;
+    }
+
+    :host(aion-pay) {
+      background-color: red;
+      font-weight: bold;
+      border: 10px;
+    }
+  </style>
 </head>
 <body>
   <div class="u-center-block fixed-height-demo">
@@ -16,7 +34,7 @@
     <aion-blocks limit="8" duration="5" gql-url="https://api.aion-graphql.com/graphql"></aion-blocks>
     </div>
      <div>
-        <aion-pay gql-url="http://localhost:8080/graphql"></aion-pay>
+        <aion-pay id="donate" to="a024fb762af2e167a62740ce97e617ce6e3b58194ce554e9bec854bdfd5075bb" gql-url="https://n1.aion-graphql.com/graphql" button-text="Donate"></aion-pay>
      </div>
   </div>
 
