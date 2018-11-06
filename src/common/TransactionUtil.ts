@@ -34,7 +34,7 @@ export class TransactionUtil {
     if(transaction.timestamp !== 0)
       txArray.push(transaction.timestamp)
     else {
-      transaction.timestamp = Math.round(Date.now() / 1000)
+      transaction.timestamp = Date.now() * 1000 //in micro second
       txArray.push(transaction.timestamp)
     }
 
