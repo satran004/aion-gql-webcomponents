@@ -1,43 +1,234 @@
 <!DOCTYPE html>
-<html dir="ltr" lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0">
-  <title>AION GQL Webcomponents - Showcase</title>
-  <script src="https://unpkg.com/aion-gql-webcomponents@x.x.x/dist/aion-gql-webcomponents.js"></script>
+<html lang="en">
 
-  <style type="text/css">
-    .my-color {
-      color: blue;
-    }
+  <head>
 
-    #donate {
-      --pay-button-color: #AA00FF;
-      --pay-button-font-family: "Comic Sans MS", "Comic Sans", cursive;
-      --pay-button-font-style: normal;
-    }
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="A set of webcomponents built using AION GraphQL for AION blockchain">
+    <meta name="keywords" content="aion webcomponents graphql aion-graphql">
 
-    :host(aion-pay) {
-      background-color: red;
-      font-weight: bold;
-      border: 10px;
-    }
-  </style>
-</head>
-<body>
-  <div class="u-center-block fixed-height-demo">
+    <title>Aion GQL Webcomponents - A collection of webcomponents using AION GraphQL</title>
 
-    <div class="u-centered"><h2>AION Mainnet - Blocks</h2></div>
-    <br/><br/>
- 
-    <div>
-    <aion-blocks limit="8" duration="5" gql-url="https://api.aion-graphql.com/graphql"></aion-blocks>
-    </div>
-     <div>
-        <aion-pay id="donate" to="a024fb762af2e167a62740ce97e617ce6e3b58194ce554e9bec854bdfd5075bb" gql-url="https://n1.aion-graphql.com/graphql" button-text="Donate"></aion-pay>
-        <aion-pay id="pay" to="a024fb762af2e167a62740ce97e617ce6e3b58194ce554e9bec854bdfd5075bb" gql-url="https://api.aion-graphql.com/graphql" button-text="Pay"></aion-pay>
-     </div>
-  </div>
+    <!-- Bootstrap core CSS -->
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 
-</body>
+    <!-- Custom styles for this template -->
+    <link href="css/scrolling-nav.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+    <script src="https://unpkg.com/aion-gql-webcomponents@x.x.x/dist/aion-gql-webcomponents.js"></script>
+
+    <style type="text/css">
+      #donate1 {
+        --pay-button-color:#3E2723;
+        --pay-button-font-family:"Roboto","Helvetica","Arial",sans-serif;
+        --pay-button-font-style:normal
+      }
+
+      #buy_now {
+        --pay-button-color:#000000;
+        --pay-button-font-family:"Roboto","Helvetica","Arial",sans-serif;
+        --pay-button-font-style:normal
+      }
+
+      #sponsor {
+        --pay-button-color:#795548;
+        --pay-button-font-family:"Roboto","Helvetica","Arial",sans-serif;
+        --pay-button-font-style:normal
+      }
+
+      section {
+        padding: 50px;
+      }
+
+      section  h2 {
+
+        text-align: center;
+
+      }
+
+      section pre {
+        /*background-color: #e9ecef*/
+      }
+    </style>
+  </head>
+
+  <body id="page-top">
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="mainNav">
+      <div class="container">
+        <a class="navbar-brand js-scroll-trigger" href="#page-top">AION GQL WebComponents</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+              <a class="nav-link js-scroll-trigger" href="#aion-pay">Aion Pay</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link js-scroll-trigger" href="#aion-blocks">Aion Blocks</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <header class="bg-primary text-white">
+      <div class="container text-center">
+        <h1>Aion GQL WebComponents</h1>
+        <p class="lead">A collection of webcomponents using AION GraphQL.<br/>
+          Compatible with any existing javascript frameworks like Angular, React or Plain JS.
+        </p>
+        <a type="button" class="btn btn-outline-dark" href="https://github.com/satran004/aion-gql-webcomponents" target="_blank">GitHub</a>
+        <a type="button" class="btn btn-outline-dark" href="https://aion-graphql.com" target="_blank">Aion GraphQL</a>
+
+      </div>
+    </header>
+
+    <section id="getting-started">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 mx-auto">
+            <h2>Getting started</h2>
+            <p class="lead">
+              Add the latest version of aion-gql-webcomponent javascript to your html.
+              <pre><code>&lt;script src="https://unpkg.com/aion-gql-webcomponents@x.x.x/dist/aion-gql-webcomponents.js"&gt;&lt;/script&gt;</code>
+              </pre>
+            <p class="lead">or for node,</p>
+              <pre><code>npm i aion-gql-webcomponents</code>
+              </pre>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="aion-pay" class="bg-light">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 mx-auto">
+            <h2>AION Pay</h2>
+            <p class="lead">A webcomponent which can be used to transfer AION coin. This component encapsulates the complex logic of
+            transaction signing and sending to AION kernel through aion graphql server. The transaction encoding and signing are done in client side.
+              So the private key or password never goes to the server.
+            </p>
+            <p class="lead">Currently sender's account can be unlocked by providing a <b>keystore file</b> or <b>private key</b>. Later it will be extended to
+            support Ledger.</p>
+            <p class="lead">As the component uses Shadow DOM, the custom styling can be applied through some standard css hoooks.</p>
+            <p class="lead">All of the below examples send transactions through api.aion-graphql.com, <i>a free AION GraphQL instance for AION community.</i></p>
+            <br/>
+
+            <p class="font-weight-bold">1. Pay to any address with default button style</p>
+            <div class="row">
+              <div class="col-lg-2">
+                <aion-pay id="pay1" gql-url="https://<aion-gql-host>/graphql"></aion-pay>
+              </div>
+              <div class="col-lg-10" mx-auto>
+                 <pre><code>&lt;aion-pay gql-url="https://[aion_gql_host]/graphql"&gt;&lt;/aion-pay&gt;</code></pre>
+              </div>
+            </div>
+            <br/>
+
+            <p class="font-weight-bold">2. Pay to a given address with default button style</p>
+            <div class="row">
+              <div class="col-lg-2">
+                <aion-pay to="a024fb762af2e167a62740ce97e617ce6e3b58194ce554e9bec854bdfd5075bb" gql-url="https://api.aion-graphql.com/graphql"></aion-pay>
+              </div>
+              <div class="col-lg-10" mx-auto>
+                <pre><code>&lt;aion-pay to="to_address" gql-url="https://[aion_gql_host]/graphql"&gt;&lt;/aion-pay&gt;</code></pre>
+              </div>
+            </div>
+            <br/>
+
+            <p class="font-weight-bold">3. With custom text and background but with AION icon on the button. Pay to a given address.</p>
+            <div class="row">
+              <div class="col-lg-2">
+                <aion-pay id="donate1" to="a024fb762af2e167a62740ce97e617ce6e3b58194ce554e9bec854bdfd5075bb"
+                          gql-url="https://api.aion-graphql.com/graphql"
+                          button-text="Donate"
+                ></aion-pay>
+              </div>
+              <div class="col-lg-10" mx-auto>
+                <pre><code>&lt;aion-pay to="to_address" gql-url="https://[aion-gql-host]/graphql" button-text=[custom_text]&gt;&lt;/aion-pay&gt;</code></pre>
+              </div>
+            </div>
+
+            <br/>
+            <p class="font-weight-bold">4. With custom style. Pay to a given address.</p>
+            <div class="row">
+              <div class="col-lg-2">
+                <aion-pay id="buy_now" to="a024fb762af2e167a62740ce97e617ce6e3b58194ce554e9bec854bdfd5075bb"
+                          gql-url="https://api.aion-graphql.com/graphql"
+                >
+                  <i class="fab fa-amazon-pay"></i> Buy Now
+                </aion-pay>
+              </div>
+              <div class="col-lg-10" mx-auto>
+                <pre><code>&lt;aion-pay to="to_address" gql-url="https://[aion-gql-host]/graphql" button-text=[custom_text]&gt;&lt;/aion-pay&gt;</code></pre>
+              </div>
+            </div>
+            <br/>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="aion-blocks" >
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 mx-auto">
+            <h2>AION Blocks</h2>
+            <p class="lead">A webcomponent to show the recent blocks on AION Blockchain. It polls the AION kernel through AION GraphQL server.
+            The polling duration needs to be provided as an property. Minimum duration, 10sec.</p>
+            <pre><code>&lt;aion-blocks limit={limit} duration="{polling time in sec}" gql-url={graphql_endpoint}&gt;&lt;/aion-blocks&gt;
+</code></pre>
+            <aion-blocks limit="8" duration="5" gql-url="https://api.aion-graphql.com/graphql"></aion-blocks>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 mx-auto">
+            <h2></h2>
+            <p class="lead text-center">
+           <b> More components. Coming soon ... </b>
+            </p>
+            <br/><br/>
+            <p class="lead text-center">If you like to donate to the project</p>
+            <div style="display: flex; justify-content: center;">
+            <aion-pay id="sponsor" to="a024fb762af2e167a62740ce97e617ce6e3b58194ce554e9bec854bdfd5075bb"
+                      gql-url="https://api.aion-graphql.com/graphql"
+                      button-text="Buy Me a Coffee"
+            ></aion-pay>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-5 bg-dark">
+      <div class="container">
+        <p class="m-0 text-center text-white">Copyright &copy; AION GraphQL 2018 - MIT License</p>
+      </div>
+      <!-- /.container -->
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Plugin JavaScript -->
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+
+    <!-- Custom JavaScript for this theme -->
+    <script src="js/scrolling-nav.js"></script>
+
+  </body>
+
 </html>
