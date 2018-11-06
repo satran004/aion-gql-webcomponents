@@ -1,6 +1,6 @@
 {
   "name": "aion-gql-webcomponents",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "AION Webcomponents using AION GraphQL",
   "module": "dist/esm/index.js",
   "main": "dist/index.js",
