@@ -10,6 +10,8 @@ import {SignedTransaction} from "./SignedTransaction";
 
 export class TransactionUtil {
 
+  static defaultNrgPrice = 10000000000
+
   public static signTransaction(transaction: Transaction, privateKey: string) {
     const txArray = new Array()
 
@@ -45,10 +47,10 @@ export class TransactionUtil {
       txArray.push(new AionLong(new BN(transaction.gas)))
     }
 
-    if(transaction.gasPrice)
+    if(transaction.gasPrice) {
       txArray.push(new AionLong(new BN(transaction.gasPrice)))
-    else {
-      transaction.gasPrice = "10000000000"
+    } else {
+      transaction.gasPrice = this.defaultNrgPrice.toString()
       txArray.push(new AionLong(new BN(transaction.gasPrice)))
     }
 

@@ -76,6 +76,9 @@ export class AionPay {
      chainApi {
       nonce(address: $address) 
      }
+     txnApi {
+       nrgPrice
+     }
     }`
 
   SEND_RAWTXN_QUERY: string = `
@@ -343,7 +346,11 @@ export class AionPay {
 
     txn.value = this.amount
 
-    txn.nonce = await this.fetchNonce()
+    let retVal = await this.fetchNonce()
+
+    txn.nonce = retVal[0]
+    if(retVal[1])
+      txn.gasPrice = retVal[1]
 
     console.log("Fetching current nonce " + txn.nonce)
 
@@ -416,13 +423,30 @@ export class AionPay {
       })
         .then(res => res.json())
         .then(res => {
-          console.log("Nonce fetched");
+          console.log("Nonce & NrgPrice fetched");
 
-          let data = ((res["data"])["chainApi"])["nonce"]
+          let nonceData = ((res["data"])["chainApi"])["nonce"]
 
-          if (data) {
-            let nonce = data as number;
-            return nonce
+          //Get current nrgPrice
+          let nrgPriceData = null
+          try {
+            nrgPriceData = ((res["data"])["txnApi"])["nrgPrice"]
+          } catch (e) {
+            console.log("Error getting current nrg price")
+          }
+
+          if (nonceData) {
+            let nonce = nonceData as number;
+
+            let nrgPrice = null
+            try {
+              if (nrgPriceData)
+                nrgPrice = nrgPriceData as number
+            } catch (e) {
+              //ignore. try cat is just for safer side
+            }
+
+            return [nonce, nrgPrice]
           } else {
             this._parseErrorFromGQLResponse(res)
           }
