@@ -8,6 +8,7 @@ import {TxnResponse} from "../../common/TxnResponse";
 import {SignedTransaction} from "../../common/SignedTransaction";
 import {CryptoUtil} from "../../common/CryptoUtil";
 import {KeyStoreUtil} from "../../common/KeyStoreUtil";
+import {LedgerProvider} from "../../common/ledger/LedgerProvider";
 
 @Component({
   tag: 'aion-pay',
@@ -118,6 +119,8 @@ export class AionPay {
     this.handleDerivePublicKey = this.handleDerivePublicKey.bind(this)
     this.submitRawTransansaction = this.submitRawTransansaction.bind(this)
 
+    this.handleLedgerConnect = this.handleLedgerConnect.bind(this)
+
   }
 
 
@@ -195,6 +198,7 @@ export class AionPay {
 
     if(oldValue != this.unlockBy) //Only reset if it's a different selection
       this.resetFromAddressData()
+
   }
 
   handleToInput(event) {
@@ -230,7 +234,6 @@ export class AionPay {
   }
 
   handleDerivePublicKey() {
-
     //If private key field is empty. just return. It will be checked again while sending the transaction.
     if(!this.privateKey || this.privateKey.trim().length == 0)
       return
@@ -297,6 +300,28 @@ export class AionPay {
   }
 
   /** keystore unlock mode ends here **/
+
+  /*** Ledger starts **/
+
+   async handleLedgerConnect() {
+    let ledgerProvider = new LedgerProvider()
+    console.log(ledgerProvider)
+
+    try {
+      await ledgerProvider.connect()
+
+      let result = await ledgerProvider.getAddress()
+
+      this.from = result.address
+
+    } catch (e) {
+      this.isError = true
+      this.errors.push(e.toString())
+    }
+
+  }
+
+  /** Ledger ends ***/
 
   validateInput() {
 
@@ -555,7 +580,8 @@ export class AionPay {
 
         {this.unlockBy == 'ledger' ?
           <div class="o-form-element">
-            <label class="c-label" htmlFor="private_key">Not supported yet.</label>
+            <label class="c-label" htmlFor="private_key"></label>
+            <button class="c-button c-button--close" onClick={this.handleLedgerConnect}>Connect</button>
           </div> : null
         }
       </div>
@@ -678,7 +704,6 @@ export class AionPay {
                         <input type="radio" name="unlock_by" value="ledger"
                                checked={this.unlockBy === 'ledger'}
                                onClick={(event) => this.handleUnlockBy(event)}
-                               disabled
                         >
                         </input>
                         &nbsp;Ledger

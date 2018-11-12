@@ -17,6 +17,7 @@
     "test.watch": "stencil test --spec --e2e --watchAll"
   },
   "dependencies": {
+    "@ledgerhq/hw-transport-u2f": "^4.28.0",
     "aes-js": "^3.1.1",
     "aion-rlp": "0.0.1",
     "blake2b": "^2.1.3",
