@@ -7,8 +7,10 @@ import {Transaction} from "../../common/Transaction";
 import {TxnResponse} from "../../common/TxnResponse";
 import {SignedTransaction} from "../../common/SignedTransaction";
 import {CryptoUtil} from "../../common/CryptoUtil";
-import {KeyStoreUtil} from "../../common/KeyStoreUtil";
 import {LedgerProvider} from "../../common/ledger/LedgerProvider";
+import PrivateKeyWalletProvider from "../../providers/impl/PrivateKeyWalletProvider";
+import {WalletProvider} from "../../providers/WalletProvider";
+import KeystoreWalletProvider from "../../providers/impl/KeystoreWalletProvider";
 
 @Component({
   tag: 'aion-pay',
@@ -62,6 +64,8 @@ export class AionPay {
   @State() encodedTxn: SignedTransaction
 
   @State() txnResponse: TxnResponse = new TxnResponse()
+
+  provider: WalletProvider
 
   amount: number
 
@@ -233,17 +237,40 @@ export class AionPay {
     }
   }
 
-  handleDerivePublicKey() {
+  async handleDerivePublicKey() {
     //If private key field is empty. just return. It will be checked again while sending the transaction.
     if(!this.privateKey || this.privateKey.trim().length == 0)
       return
 
     try {
       this.handleHideError()
-      let address = TransactionUtil.getAddress(this.privateKey)
+
+      this.provider = null
+      this.provider = new PrivateKeyWalletProvider(this.privateKey)
+
+      let [address] = await this.provider.unlock(null)
+
 
       if (address)
         this.from = address
+
+      this.fetchBalance(this.from, (balance) => {
+        this.fromBalance = CryptoUtil.convertnAmpBalanceToAION(balance);
+      })
+    } catch (error) {
+      console.log(error)
+      this.from = ''
+      this.fromBalance = null
+      this.isError = true
+      this.errors.push("Public Key derivation failed: " + error.toString())
+      throw error
+    }
+  }
+
+  async updateBalance() {
+
+    try {
+      this.handleHideError()
 
       this.fetchBalance(this.from, (balance) => {
         this.fromBalance = CryptoUtil.convertnAmpBalanceToAION(balance);
@@ -268,7 +295,7 @@ export class AionPay {
     this.keystore_password = event.target.value;
   }
 
-  handleUnlockKeystore() {
+  async handleUnlockKeystore() {
 
     let reader = new FileReader()
 
@@ -281,21 +308,37 @@ export class AionPay {
     }
 
     let me = this;
-    reader.onload = function () {
+    reader.onload = async function () {
       let content = reader.result;
 
       me.handleHideError()
 
-      KeyStoreUtil.unlock(content as ArrayBuffer, me.keystore_password, (progress) => {
-        me.keystoreLoadingPercentage = Math.round(progress)
-      }, (_address, privateKey) => {
-        me.privateKey = privateKey
-        me.handleDerivePublicKey()
-      }, (error) => {
+      me.provider = new KeystoreWalletProvider(content, me.keystore_password)
+
+      try {
+        let [address] = await me.provider.unlock((progress: number) => {
+          me.keystoreLoadingPercentage = Math.round(progress)
+        })
+
+        me.from = address
+
+        me.updateBalance()
+      } catch (error) {
         console.log("Error in opening keystore fie. " + error)
         me.isError = true
         me.errors.push("Could not open the keystore file. " + error.toString())
-      });
+      }
+
+      // KeyStoreUtil.unlock(content as ArrayBuffer, me.keystore_password, (progress) => {
+      //   me.keystoreLoadingPercentage = Math.round(progress)
+      // }, (_address, privateKey) => {
+      //   me.privateKey = privateKey
+      //   me.handleDerivePublicKey()
+      // }, (error) => {
+      //   console.log("Error in opening keystore fie. " + error)
+      //   me.isError = true
+      //   me.errors.push("Could not open the keystore file. " + error.toString())
+      // });
     }
   }
 

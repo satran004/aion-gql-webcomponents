@@ -1,6 +1,8 @@
 /** Polyfill**/
 import {Buffer} from 'buffer'
 
+var global = global || window;
+
 if(!window.global)
   window.global = window;
 

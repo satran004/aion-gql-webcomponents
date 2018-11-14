@@ -47,13 +47,12 @@ export class LedgerProvider {
   }
 
   /**
-   * get Ethereum address for a given BIP 32 path.
+   * get Aion address for a given BIP 32 path.
    * @param path a path in BIP 32 format
    * @option boolDisplay optionally enable or not the display
    * @option boolChaincode optionally enable or not the chaincode request
-   * @return an object with a publicKey, address and (optionally) chainCode
+   * @return an object with a publicKey, address
    * @example
-   * eth.getAddress("44'/60'/0'/0/0").then(o => o.address)
    */
   private _getAddress(
     path: string,
