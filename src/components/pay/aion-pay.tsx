@@ -7,7 +7,7 @@ import {Transaction} from "../../common/Transaction";
 import {TxnResponse} from "../../common/TxnResponse";
 import {SignedTransaction} from "../../common/SignedTransaction";
 import {CryptoUtil} from "../../common/CryptoUtil";
-import {LedgerProvider} from "../../common/ledger/LedgerProvider";
+import {LedgerProvider} from "../../providers/impl/ledger/LedgerProvider";
 import PrivateKeyWalletProvider from "../../providers/impl/PrivateKeyWalletProvider";
 import {WalletProvider} from "../../providers/WalletProvider";
 import KeystoreWalletProvider from "../../providers/impl/KeystoreWalletProvider";
@@ -347,21 +347,20 @@ export class AionPay {
   /*** Ledger starts **/
 
    async handleLedgerConnect() {
-    let ledgerProvider = new LedgerProvider()
-    console.log(ledgerProvider)
 
+    this.provider = new LedgerProvider()
     try {
-      await ledgerProvider.connect()
 
-      let result = await ledgerProvider.getAddress()
+      let [address] = await this.provider.unlock(null)
 
-      this.from = result.address
+      this.from = address
+
+      this.updateBalance()
 
     } catch (e) {
       this.isError = true
       this.errors.push(e.toString())
     }
-
   }
 
   /** Ledger ends ***/
@@ -622,9 +621,10 @@ export class AionPay {
         }
 
         {this.unlockBy == 'ledger' ?
-          <div class="o-form-element">
+          <div class="o-form-element u-center-block">
             <label class="c-label" htmlFor="private_key"></label>
-            <button class="c-button c-button--close" onClick={this.handleLedgerConnect}>Connect</button>
+            <button class="c-button c-button--success" onClick={this.handleLedgerConnect}>Connect To Ledger</button>
+
           </div> : null
         }
       </div>

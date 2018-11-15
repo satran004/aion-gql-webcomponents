@@ -2,22 +2,24 @@ import Transport from "@ledgerhq/hw-transport-u2f";
 
 import {Buffer} from "buffer";
 import {Util} from "./Util";
-import {CryptoUtil} from "../CryptoUtil";
+import {CryptoUtil} from "../../../common/CryptoUtil";
+import {WalletProvider} from "../../WalletProvider";
+import {Transaction} from "../../../common/Transaction";
+import {SignedTransaction} from "../../../common/SignedTransaction";
 
-export class LedgerProvider {
+export class LedgerProvider implements WalletProvider {
 
   transport: Transport
   path = "44'/425'/0'/0'/0'"
 
   constructor() {
-
+    this.connect()
   }
 
-  public async connect() {
+  private async connect() {
     // await
-    try {
-      let _transport = await Transport.create()
 
+    return Transport.create().then(_transport => {
       _transport.decorateAppAPIMethods(
         this,
         [
@@ -27,19 +29,23 @@ export class LedgerProvider {
         ],
         "aion"
       );
-
-      this.transport = _transport
-    }catch (e) {
-      console.error("Unable to connect to ledger ", e)
-      throw e
-    }
+      return _transport
+    })
   }
 
-  public async getAddress() {
+  public async unlock(progressCallback: (number) => void): Promise<[string, string]> {
+
 
     try {
-      let result = await this._getAddress(this.path, true, false)
-      return result
+      if (!this.transport)
+        this.transport = await this.connect()
+
+      let result = await this.getAddress(this.path, true, false)
+
+      if (progressCallback)
+        progressCallback(100)
+
+      return [result.address, result.publicKey]
     } catch (e) {
       console.log("Error getting address", e)
       throw e
@@ -54,7 +60,7 @@ export class LedgerProvider {
    * @return an object with a publicKey, address
    * @example
    */
-  private _getAddress(
+   getAddress(
     path: string,
     boolDisplay?: boolean,
     boolChaincode?: boolean
@@ -69,14 +75,14 @@ export class LedgerProvider {
       buffer.writeUInt32BE(element, 1 + 4 * index);
     });
 
-   // let buffer1 = new Buffer("15058000002c800001a9800000008000000080000000", 'hex')
+    // let buffer1 = new Buffer("15058000002c800001a9800000008000000080000000", 'hex')
     return this.transport.send(
-        0xe0,
-        0x02,
-        boolDisplay ? 0x01 : 0x00,
-        boolChaincode ? 0x01 : 0x00,
-        buffer
-      )
+      0xe0,
+      0x02,
+      boolDisplay ? 0x01 : 0x00,
+      boolChaincode ? 0x01 : 0x00,
+      buffer
+    )
       .then(response => {
 
         let result = {
@@ -84,11 +90,11 @@ export class LedgerProvider {
           address: ''
         }
 
-        if(response.length < 64)
+        if (response.length < 64)
           throw new Error("Invalid response for getAddress")
 
         //First 32 byte is public key and then address
-        let publicKeyBuff = response.slice(0,32)
+        let publicKeyBuff = response.slice(0, 32)
         let addressBuff = response.slice(32, 64)
 
         result.publicKey = CryptoUtil.uia2hex(publicKeyBuff)
@@ -96,6 +102,12 @@ export class LedgerProvider {
 
         return result
       });
+  }
+
+  // @ts-ignore
+  async sign(transaction: Transaction): Promise<SignedTransaction> { //TODO
+    transaction = null
+    return null
   }
 
   getAppConfiguration(): Promise<{
@@ -112,6 +124,5 @@ export class LedgerProvider {
       return result;
     });
   }
-
 
 }
