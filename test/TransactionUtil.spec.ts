@@ -39,7 +39,7 @@ describe("Transaction signing tests", () => {
     let privateKey = "5abbdaccc3959e80fb708442b4dc15c29682badb036c71dd1bac06834513bfc954dc917cdb64ef327021109835bbf8add6638574666f999bebdb0815315875f5"
     let expectedAddress = "0xa0c0cc973a306d31320fe72cad62afaa799d076bbd492ca4d5d5d941adfa12a9"
 
-    let address = TransactionUtil.getAddress(privateKey)
+    let [address] = TransactionUtil.getAddress(privateKey)
 
     expect(address).toBe(expectedAddress)
   })

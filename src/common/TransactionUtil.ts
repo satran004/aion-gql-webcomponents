@@ -107,13 +107,13 @@ export class TransactionUtil {
     return signedTransaction
   }
 
-  public static getAddress(privateKey) {
+  public static getAddress(privateKey): [string, string] {
     //sign with ncal
     const privateKeyBuff = CryptoUtil.hex2ua(privateKey)
 
     const keyPair = nacl.sign.keyPair.fromSecretKey(privateKeyBuff)
 
-    return CryptoUtil.createA0Address(keyPair.publicKey);
+    return [CryptoUtil.createA0Address(keyPair.publicKey), CryptoUtil.uia2hex(keyPair.publicKey)];
 
   }
 
