@@ -435,7 +435,7 @@ export class AionPay {
             console.log("Error getting current nrg price")
           }
 
-          if (nonceData) {
+          if (nrgPriceData) {
             let nonce = nonceData as number;
 
             let nrgPrice = null
