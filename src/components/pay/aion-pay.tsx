@@ -415,6 +415,12 @@ export class AionPay {
 
     let retVal = await this.fetchNonce()
 
+    if(!retVal) { //Not able to get nonce and nrgPrice
+      this.isError = true
+      this.errors.push("Unable to get nonce and nrgPrice from AION kernel")
+      return
+    }
+
     txn.nonce = retVal[0]
     if(retVal[1])
       txn.gasPrice = retVal[1]
@@ -502,7 +508,7 @@ export class AionPay {
             console.log("Error getting current nrg price")
           }
 
-          if (nonceData) {
+          if (nrgPriceData) {
             let nonce = nonceData as number;
 
             let nrgPrice = null
