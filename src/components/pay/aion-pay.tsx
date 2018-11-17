@@ -2,11 +2,10 @@ import '../../global/global.js'
 
 import {Component, Prop, State} from '@stencil/core';
 import {Constant} from "../../common/Constant";
-import {TransactionUtil} from "../../common/TransactionUtil";
 import {Transaction} from "../../common/Transaction";
 import {TxnResponse} from "../../common/TxnResponse";
 import {SignedTransaction} from "../../common/SignedTransaction";
-import {CryptoUtil} from "../../common/CryptoUtil";
+import {CryptoUtil} from "../../providers/util/CryptoUtil";
 import {LedgerProvider} from "../../providers/impl/ledger/LedgerProvider";
 import PrivateKeyWalletProvider from "../../providers/impl/PrivateKeyWalletProvider";
 import {WalletProvider} from "../../providers/WalletProvider";
@@ -374,13 +373,11 @@ export class AionPay {
       this.errors.push("Amount is not valid")
     }
 
-    if (!this.privateKey || this.privateKey.trim().length == 0) {
-      this.isError = true
-
-      if(this.unlockBy == 'private_key')
+    if(this.unlockBy == 'private_key') {
+      if (!this.privateKey || this.privateKey.trim().length == 0) {
+        this.isError = true
         this.errors.push("Private key can not be empty")
-      else if(this.unlockBy == 'keystore')
-        this.errors.push("Please provide a keystore file and unlock it")
+      }
     }
 
     if (!this._to || this._to.trim().length == 0) {
@@ -428,7 +425,7 @@ export class AionPay {
     console.log("Fetching current nonce " + txn.nonce)
 
     try {
-      this.encodedTxn = TransactionUtil.signTransaction(txn, this.privateKey)
+      this.encodedTxn = await this.provider.sign(txn) //TransactionUtil.signTransaction(txn, this.privateKey)
     } catch (error) {
       console.log(error)
       this.isError = true

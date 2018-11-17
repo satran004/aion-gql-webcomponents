@@ -1,4 +1,4 @@
-import {TransactionUtil} from "../src/common/TransactionUtil";
+import {TransactionUtil} from "../src/providers/util/TransactionUtil";
 import {Transaction} from "../src/common/Transaction";
 
 describe("Transaction signing tests", () => {

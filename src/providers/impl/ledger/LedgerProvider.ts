@@ -2,15 +2,20 @@ import Transport from "@ledgerhq/hw-transport-u2f";
 
 import {Buffer} from "buffer";
 import {Util} from "./Util";
-import {CryptoUtil} from "../../../common/CryptoUtil";
+import {CryptoUtil} from "../../util/CryptoUtil";
 import {WalletProvider} from "../../WalletProvider";
 import {Transaction} from "../../../common/Transaction";
 import {SignedTransaction} from "../../../common/SignedTransaction";
+import {TransactionUtil} from "../../util/TransactionUtil";
 
 export class LedgerProvider implements WalletProvider {
 
   transport: Transport
   path = "44'/425'/0'/0'/0'"
+
+  // @ts-ignore
+  private address: string
+  private publicKey: string
 
   constructor() {
     this.connect()
@@ -34,8 +39,6 @@ export class LedgerProvider implements WalletProvider {
   }
 
   public async unlock(progressCallback: (number) => void): Promise<[string, string]> {
-
-
     try {
       if (!this.transport)
         this.transport = await this.connect()
@@ -44,6 +47,9 @@ export class LedgerProvider implements WalletProvider {
 
       if (progressCallback)
         progressCallback(100)
+
+      this.address = result.address
+      this.publicKey = result.publicKey
 
       return [result.address, result.publicKey]
     } catch (e) {
@@ -97,7 +103,7 @@ export class LedgerProvider implements WalletProvider {
         let publicKeyBuff = response.slice(0, 32)
         let addressBuff = response.slice(32, 64)
 
-        result.publicKey = CryptoUtil.uia2hex(publicKeyBuff)
+        result.publicKey = CryptoUtil.uia2hex(publicKeyBuff, true) //ignore 0x
         result.address = CryptoUtil.uia2hex(addressBuff)
 
         return result
@@ -105,24 +111,55 @@ export class LedgerProvider implements WalletProvider {
   }
 
   // @ts-ignore
-  async sign(transaction: Transaction): Promise<SignedTransaction> { //TODO
-    transaction = null
-    return null
-  }
+  async sign(transaction: Transaction): Promise<SignedTransaction> {
+    let rawTransaction = TransactionUtil.rlpEncode(transaction)
+    let rawTxHash = CryptoUtil.uia2hex(rawTransaction, true)
 
-  getAppConfiguration(): Promise<{
-    arbitraryDataEnabled: number,
-    version: string
-  }> {
-    return this.transport.send(0xe0, 0x06, 0x00, 0x00).then(response => {
-      let result = {
-        arbitraryDataEnabled: null,
-        version: null
-      };
-      result.arbitraryDataEnabled = response[0] & 0x01;
-      result.version = "" + response[1] + "." + response[2] + "." + response[3];
-      return result;
+    let paths = Util.splitPath(this.path);
+    let offset = 0;
+
+    let rawTx = new Buffer(rawTxHash, "hex");
+    let toSend = [];
+    let response;
+
+    while (offset !== rawTx.length) {
+      let maxChunkSize = offset === 0 ? 150 - 1 - paths.length * 4 : 150;
+      let chunkSize =
+        offset + maxChunkSize > rawTx.length
+          ? rawTx.length - offset
+          : maxChunkSize;
+      let buffer = new Buffer(
+        offset === 0 ? 1 + paths.length * 4 + chunkSize : chunkSize
+      );
+      if (offset === 0) {
+        buffer[0] = paths.length;
+        paths.forEach((element, index) => {
+          buffer.writeUInt32BE(element, 1 + 4 * index);
+        });
+        rawTx.copy(buffer, 1 + 4 * paths.length, offset, offset + chunkSize);
+      } else {
+        rawTx.copy(buffer, 0, offset, offset + chunkSize);
+      }
+      toSend.push(buffer);
+      offset += chunkSize;
+    }
+
+    return Util.foreach(toSend, (data, i) => {
+      return this.transport
+        .send(0xe0, 0x04, i === 0 ? 0x00 : 0x80, 0x00, data)
+        .then(apduResponse => {
+          response = apduResponse;
+        })}
+    ).then(() => {
+      // const v = response.slice(0, 1);
+      // const r = response.slice(1, 1 + 32);
+      // const s = response.slice(1 + 32, 1 + 32 + 32);
+      //return { v, r, s };
+      let signature = response.slice(0, 64) //get first 64 bytes for signature
+
+      return TransactionUtil.verifyAndEncodedSignTransaction(transaction, rawTransaction, signature, CryptoUtil.hex2ua(this.publicKey))
     });
+
   }
 
 }

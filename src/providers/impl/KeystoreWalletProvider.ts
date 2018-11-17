@@ -1,13 +1,13 @@
 import {WalletProvider} from "../WalletProvider";
 import {Buffer} from "buffer";
 import rlp from "aion-rlp"
-import {CryptoUtil} from "../../common/CryptoUtil";
+import {CryptoUtil} from "../util/CryptoUtil";
 import nacl from "tweetnacl";
 import scrypt from "scrypt-js"
 import aesjs from "aes-js"
 import {Transaction} from "../../common/Transaction";
 import {SignedTransaction} from "../../common/SignedTransaction";
-import {TransactionUtil} from "../../common/TransactionUtil";
+import {TransactionUtil} from "../util/TransactionUtil";
 
 //Logic taken from https://github.com/qoire/aion-keystore
 export default class KeystoreWalletProvider implements WalletProvider {

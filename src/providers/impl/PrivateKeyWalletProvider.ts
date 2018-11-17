@@ -1,5 +1,5 @@
 import {WalletProvider} from "../WalletProvider";
-import {TransactionUtil} from "../../common/TransactionUtil";
+import {TransactionUtil} from "../util/TransactionUtil";
 import {Transaction} from "../../common/Transaction";
 import {SignedTransaction} from "../../common/SignedTransaction";
 
