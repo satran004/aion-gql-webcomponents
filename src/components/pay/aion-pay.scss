@@ -41,7 +41,7 @@ button {
 
   .pay-button-text {
     font-weight: var(--pay-button-font-weight, bolder);
-    font-style: var(--pay-button-font-style, italic);
+    font-style: var(--pay-button-font-style, normal);
     font-family: var(--pay-button-font-family, "Courier New");
   }
 }

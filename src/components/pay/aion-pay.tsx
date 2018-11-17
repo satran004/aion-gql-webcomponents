@@ -10,6 +10,7 @@ import {LedgerProvider} from "../../providers/impl/ledger/LedgerProvider";
 import PrivateKeyWalletProvider from "../../providers/impl/PrivateKeyWalletProvider";
 import {WalletProvider} from "../../providers/WalletProvider";
 import KeystoreWalletProvider from "../../providers/impl/KeystoreWalletProvider";
+import AionPayService from "./AionPayService";
 
 @Component({
   tag: 'aion-pay',
@@ -28,7 +29,7 @@ export class AionPay {
 
   to_readonly: boolean = false
 
-  @State() unlockBy: string = "private_key"
+  @State() unlockBy: string = "keystore"
 
   @State() visible: boolean = false
 
@@ -66,38 +67,9 @@ export class AionPay {
 
   provider: WalletProvider
 
+  service: AionPayService
+
   amount: number
-
-  BALANCE_QUERY: string = `
-    query nonce($address: String!) {
-     chainApi {
-      balance(address: $address) 
-     }
-    }`
-
-  NONCE_QUERY: string = `
-    query nonce($address: String!) {
-     chainApi {
-      nonce(address: $address) 
-     }
-     txnApi {
-       nrgPrice
-     }
-    }`
-
-  SEND_RAWTXN_QUERY: string = `
-    mutation sendRawTransaction($encodedTx: String!) {
-     txnApi {
-        sendRawTransaction(encodedTx: $encodedTx) {
-          status
-          msgHash
-          txHash
-          txResult
-          txDeploy
-          error
-        }
-      }
-    }`
 
   constructor() {
     this.handleHidePaymentDialog = this.handleHidePaymentDialog.bind(this)
@@ -131,8 +103,11 @@ export class AionPay {
     if (this.to)
       this._to = this.to.toLowerCase()
 
-    if(this.to)
+    if (this.to)
       this.to_readonly = true
+
+    //initialize service
+    this.service = new AionPayService(this.gqlUrl)
   }
 
   handleShowPaymentDialog() {
@@ -199,7 +174,7 @@ export class AionPay {
     let oldValue = this.unlockBy
     this.unlockBy = event.target.value
 
-    if(oldValue != this.unlockBy) //Only reset if it's a different selection
+    if (oldValue != this.unlockBy) //Only reset if it's a different selection
       this.resetFromAddressData()
 
   }
@@ -238,7 +213,7 @@ export class AionPay {
 
   async handleDerivePublicKey() {
     //If private key field is empty. just return. It will be checked again while sending the transaction.
-    if(!this.privateKey || this.privateKey.trim().length == 0)
+    if (!this.privateKey || this.privateKey.trim().length == 0)
       return
 
     try {
@@ -253,9 +228,8 @@ export class AionPay {
       if (address)
         this.from = address
 
-      this.fetchBalance(this.from, (balance) => {
-        this.fromBalance = CryptoUtil.convertnAmpBalanceToAION(balance);
-      })
+      this.updateBalance()
+
     } catch (error) {
       console.log(error)
       this.from = ''
@@ -268,20 +242,30 @@ export class AionPay {
 
   async updateBalance() {
 
-    try {
-      this.handleHideError()
+    // try {
+    // this.handleHideError()
 
-      this.fetchBalance(this.from, (balance) => {
-        this.fromBalance = CryptoUtil.convertnAmpBalanceToAION(balance);
-      })
+    try {
+      let balance = await this.service.fetchBalance(this.from)
+
+      if (balance)
+        this.fromBalance = CryptoUtil.convertnAmpBalanceToAION(balance)
+
     } catch (error) {
-      console.log(error)
-      this.from = ''
-      this.fromBalance = null
       this.isError = true
-      this.errors.push("Public Key derivation failed: " + error.toString())
-      throw error
+      this.errors.push("Error getting balance for the address")
+      this.errors.push("[Reason] " + error)
+      return
     }
+
+    // } catch (error) {
+    //   console.log(error)
+    //   this.from = ''
+    //   this.fromBalance = null
+    //   this.isError = true
+    //   this.errors.push("Public Key derivation failed: " + error.toString())
+    //   throw error
+    // }
   }
 
   /** For keystore unlock mode **/
@@ -345,7 +329,7 @@ export class AionPay {
 
   /*** Ledger starts **/
 
-   async handleLedgerConnect() {
+  async handleLedgerConnect() {
 
     this.provider = new LedgerProvider()
     try {
@@ -373,7 +357,7 @@ export class AionPay {
       this.errors.push("Amount is not valid")
     }
 
-    if(this.unlockBy == 'private_key') {
+    if (this.unlockBy == 'private_key') {
       if (!this.privateKey || this.privateKey.trim().length == 0) {
         this.isError = true
         this.errors.push("Private key can not be empty")
@@ -410,16 +394,26 @@ export class AionPay {
 
     txn.value = this.amount
 
-    let retVal = await this.fetchNonce()
+    //Get nonce and nrgPrice
+    let retVal = null
+    try {
+      retVal = await this.service.fetchNonce(this.from)
+    } catch (e) {
+      this.isError = true
+      this.errors.push("Error to get nonce for the address")
+      this.errors.push("[Reason] " + e)
+      return;
+    }
 
-    if(!retVal) { //Not able to get nonce and nrgPrice
+    if (!retVal) { //Not able to get nonce and nrgPrice
       this.isError = true
       this.errors.push("Unable to get nonce and nrgPrice from AION kernel")
       return
     }
+    //End - Get nonce & nrgPrice
 
     txn.nonce = retVal[0]
-    if(retVal[1])
+    if (retVal[1])
       txn.gasPrice = retVal[1]
 
     console.log("Fetching current nonce " + txn.nonce)
@@ -448,133 +442,22 @@ export class AionPay {
     this.submitRawTransansaction(this.encodedTxn.rawTransaction)
   }
 
-  fetchBalance(address, callback) {
-    try {
-      return fetch(this.gqlUrl, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({"query": this.BALANCE_QUERY, "variables": {"address": address}}),
-      })
-        .then(res => res.json())
-        .then(res => {
-          console.log("Balance fetched");
-
-          let data = ((res["data"])["chainApi"])["balance"]
-
-          if (data) {
-            let balance = data as number;
-            callback(balance)
-            return balance
-          } else {
-            this._parseErrorFromGQLResponse(res)
-          }
-
-        })
-        .catch(reason => {
-          this.isError = true
-          this.errors.push("Error getting balance for the address")
-          this.errors.push("[Reason] " + reason)
-          throw new Error(reason)
-        })
-    } catch (error) {
-      this.isError = true
-      this.errors.push("Error getting balance for the account. Please close the dialog and try again")
-      console.log(error)
-      throw error
-    }
-  }
-
-  fetchNonce() {
-    try {
-      return fetch(this.gqlUrl, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({"query": this.NONCE_QUERY, "variables": {"address": this.from}}),
-      })
-        .then(res => res.json())
-        .then(res => {
-          console.log("Nonce & NrgPrice fetched");
-
-          let nonceData = ((res["data"])["chainApi"])["nonce"]
-
-          //Get current nrgPrice
-          let nrgPriceData = null
-          try {
-            nrgPriceData = ((res["data"])["txnApi"])["nrgPrice"]
-          } catch (e) {
-            console.log("Error getting current nrg price")
-          }
-
-          if (nrgPriceData) {
-            let nonce = nonceData as number;
-
-            let nrgPrice = null
-            try {
-              if (nrgPriceData)
-                nrgPrice = nrgPriceData as number
-            } catch (e) {
-              //ignore. try cat is just for safer side
-            }
-
-            return [nonce, nrgPrice]
-          } else {
-            this._parseErrorFromGQLResponse(res)
-          }
-
-        })
-        .catch(reason => {
-          this.isError = true
-          this.errors.push("Error to get nonce for the address")
-          this.errors.push("[Reason] " + reason)
-          throw new Error(reason)
-        })
-    } catch (error) {
-      this.isError = true
-      this.errors.push("Error getting nonce for the account. Please close the dialog and try again")
-      console.log(error)
-      throw error
-    }
-  }
-
-  submitRawTransansaction(encodedTx) {
+  async submitRawTransansaction(encodedTx) {
 
     this.txnInProgress = true
     this.txnDone = false
 
     try {
-      return fetch(this.gqlUrl, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({"query": this.SEND_RAWTXN_QUERY, "variables": {"encodedTx": encodedTx}}),
-      })
-        .then(res => res.json())
-        .then(res => {
 
-          let data = ((res["data"])["txnApi"])["sendRawTransaction"]
+      this.txnResponse = await this.service.sendRawTransaction(encodedTx)
+      console.log(this.txnResponse)
+      this.txnDone = true
 
-          if (data)
-            this.txnResponse = data as TxnResponse
-          else { //error
-            this._parseErrorFromGQLResponse(res)
-          }
-
-          console.log(this.txnResponse)
-
-          this.txnDone = true
-
-        })
-        .catch(reason => {
-          this.txnDone = true
-          this.isError = true
-          this.errors.push("Error sending the transaction")
-          this.errors.push("[Reason] " + reason)
-          throw new Error(reason)
-        })
     } catch (error) {
       this.txnDone = true
       this.isError = true
-      this.errors.push("Error sending the transaction. Please check in the blockchain explorer and try again.")
-      console.log(error)
+      this.errors.push("Error sending the transaction")
+      this.errors.push("[Reason] " + error)
       throw error
     }
   }
@@ -626,7 +509,8 @@ export class AionPay {
         {this.unlockBy == 'ledger' ?
           <div class="o-form-element u-center-block">
             <label class="c-label" htmlFor="private_key"></label>
-            <button class="c-button c-button--success" onClick={this.handleLedgerConnect}>Connect To Ledger</button>
+            <button class="c-button c-button--info u-small u-center-block__content u-center-block__content--horizontal"
+                    onClick={this.handleLedgerConnect}>Connect To Ledger</button>
 
           </div> : null
         }
@@ -824,7 +708,9 @@ export class AionPay {
 
             <div class="c-card__body">
               {!this.txnDone ?
-                <div><div class="loader">Loading ...</div> &nbsp; <i>Sending transaction and waiting for at least one block confirmation. Please wait ...</i>
+                <div>
+                  <div class="loader">Loading ...</div>
+                  &nbsp; <i>Sending transaction and waiting for at least one block confirmation. Please wait ...</i>
                 </div> :
                 <div>
                   {this.txnResponse.txHash ?
@@ -952,11 +838,11 @@ export class AionPay {
           this.renderShowConfirmation() : null
         }
 
-        <button type="button" class="c-button pay-button .u-high" onClick={this.handleShowPaymentDialog}>
+        <button type="button" class="c-button pay-button u-high" onClick={this.handleShowPaymentDialog}>
           <slot>
             <span class="pay-button-text">
               <img src={Constant.aion_logo} class="img-valign"></img>
-              {this.buttonText? this.buttonText: this.default_button_text}
+              {this.buttonText ? this.buttonText : this.default_button_text}
             </span>
           </slot>
         </button>
