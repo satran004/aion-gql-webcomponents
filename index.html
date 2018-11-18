@@ -16,6 +16,10 @@
     <!-- Custom styles for this template -->
     <link href="css/scrolling-nav.css" rel="stylesheet">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+
+    <script>
+      var global = global || window;
+    </script>
     <script src="https://unpkg.com/aion-gql-webcomponents@x.x.x/dist/aion-gql-webcomponents.js"></script>
 
     <style type="text/css">
@@ -27,12 +31,6 @@
 
       #buy_now {
         --pay-button-color:#000000;
-        --pay-button-font-family:"Roboto","Helvetica","Arial",sans-serif;
-        --pay-button-font-style:normal
-      }
-
-      #sponsor {
-        --pay-button-color:#795548;
         --pay-button-font-family:"Roboto","Helvetica","Arial",sans-serif;
         --pay-button-font-style:normal
       }
@@ -93,11 +91,20 @@
           <div class="col-lg-8 mx-auto">
             <h2>Getting started</h2>
             <p class="lead">
-              Add the latest version of aion-gql-webcomponent javascript to your html.
-              <pre><code>&lt;script src="https://unpkg.com/aion-gql-webcomponents@x.x.x/dist/aion-gql-webcomponents.js"&gt;&lt;/script&gt;</code>
+              Add the latest version of aion-gql-webcomponent javascript to your html and the following script tag.
+              <pre>
+                <code>
+&lt;script&gt;
+  var global = global || window;
+&lt;/script&gt;
+
+&lt;script src="https://unpkg.com/aion-gql-webcomponents@x.x.x/dist/aion-gql-webcomponents.js"&gt;&lt;/script&gt;
+              </code>
               </pre>
             <p class="lead">or for node,</p>
-              <pre><code>npm i aion-gql-webcomponents</code>
+              <pre><code>
+npm i aion-gql-webcomponents
+              </code>
               </pre>
             </p>
           </div>
@@ -162,7 +169,9 @@
                 <aion-pay id="buy_now" to="a024fb762af2e167a62740ce97e617ce6e3b58194ce554e9bec854bdfd5075bb"
                           gql-url="https://api.aion-graphql.com/graphql"
                 >
+                  <button class="button" style="background-color: #000000; color: #ffffff; border-radius: 5px;">
                   <i class="fab fa-amazon-pay"></i> Buy Now
+                  </button>
                 </aion-pay>
               </div>
               <div class="col-lg-10" mx-auto>
@@ -203,7 +212,7 @@
             <div style="display: flex; justify-content: center;">
             <aion-pay id="sponsor" to="a024fb762af2e167a62740ce97e617ce6e3b58194ce554e9bec854bdfd5075bb"
                       gql-url="https://api.aion-graphql.com/graphql"
-                      button-text="Buy Me a Coffee"
+                      button-text="&nbsp;Buy Me a Coffee"
             ></aion-pay>
             </div>
           </div>
