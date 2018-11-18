@@ -29,9 +29,11 @@ export class AionPay {
 
   to_readonly: boolean = false
 
-  @State() unlockBy: string = "keystore"
+  @State() unlockBy: string = "ledger"
 
   @State() visible: boolean = false
+
+  @State() inputDialogEnable: boolean = false
 
   @State() txnInProgress: boolean = false
 
@@ -50,6 +52,8 @@ export class AionPay {
   @State() _to: string
 
   @State() value: number
+
+  @State() message: string
 
   @State() privateKey: string
 
@@ -72,12 +76,16 @@ export class AionPay {
   amount: number
 
   constructor() {
+
     this.handleHidePaymentDialog = this.handleHidePaymentDialog.bind(this)
     this.handleShowPaymentDialog = this.handleShowPaymentDialog.bind(this)
     this.handleHideTransactionInprogressDialog = this.handleHideTransactionInprogressDialog.bind(this)
     this.handleCloseConfirmDialog = this.handleCloseConfirmDialog.bind(this)
     this.handleHideError = this.handleHideError.bind(this)
     this.handleResetData = this.handleResetData.bind(this)
+
+    this.handleShowInputDialog = this.handleShowInputDialog.bind(this)
+    this.handleHideInputDialog = this.handleHideInputDialog.bind(this)
 
     this.signPayment = this.signPayment.bind(this)
     this.confirmPayment = this.confirmPayment.bind(this)
@@ -86,6 +94,7 @@ export class AionPay {
     this.handleFromInput = this.handleFromInput.bind(this)
     this.handleToInput = this.handleToInput.bind(this)
     this.handleValueInput = this.handleValueInput.bind(this)
+    this.handleMessageInput = this.handleMessageInput.bind(this)
     this.handlePrivateKeyInput = this.handlePrivateKeyInput.bind(this)
     this.handleKeyStoreFileSelected = this.handleKeyStoreFileSelected.bind(this)
     this.handleKeystorePasswordInput = this.handleKeystorePasswordInput.bind(this)
@@ -98,7 +107,6 @@ export class AionPay {
 
   }
 
-
   componentWillLoad() {
     if (this.to)
       this._to = this.to.toLowerCase()
@@ -110,13 +118,32 @@ export class AionPay {
     this.service = new AionPayService(this.gqlUrl)
   }
 
+  //1st step wallet provider
   handleShowPaymentDialog() {
     this.visible = true
   }
 
   handleHidePaymentDialog() {
     this.visible = false
+    this.inputDialogEnable = false
     this.handleResetData()
+  }
+
+  //2nd step in wizard
+  handleShowInputDialog() {//step 2
+
+    if(!this.from) {
+      this.isError = true
+      this.errors.push("Please select a wallet provider and unlock it.")
+      return
+    }
+
+    this.visible = false
+    this.inputDialogEnable = true
+  }
+
+  handleHideInputDialog() {
+    this.inputDialogEnable = false
   }
 
   handleHideTransactionInprogressDialog() {
@@ -138,6 +165,7 @@ export class AionPay {
 
   handleResetData() {
     this.txnInProgress = false
+    this.showConfirm = false
     this.txnDone = false
     this.visible = false
 
@@ -203,6 +231,10 @@ export class AionPay {
     }
   }
 
+  handleMessageInput(event) {
+    this.message = event.target.value;
+  }
+
   handlePrivateKeyInput(event) {
     this.privateKey = event.target.value
 
@@ -242,9 +274,6 @@ export class AionPay {
 
   async updateBalance() {
 
-    // try {
-    // this.handleHideError()
-
     try {
       let balance = await this.service.fetchBalance(this.from)
 
@@ -257,15 +286,6 @@ export class AionPay {
       this.errors.push("[Reason] " + error)
       return
     }
-
-    // } catch (error) {
-    //   console.log(error)
-    //   this.from = ''
-    //   this.fromBalance = null
-    //   this.isError = true
-    //   this.errors.push("Public Key derivation failed: " + error.toString())
-    //   throw error
-    // }
   }
 
   /** For keystore unlock mode **/
@@ -348,6 +368,7 @@ export class AionPay {
 
   /** Ledger ends ***/
 
+
   validateInput() {
 
     this.handleHideError()
@@ -372,6 +393,7 @@ export class AionPay {
     return !this.isError
   }
 
+
   async signPayment(e) {
     e.preventDefault()
 
@@ -393,6 +415,10 @@ export class AionPay {
     txn.to = this._to
 
     txn.value = this.amount
+
+    if(this.message) {
+      txn.data = this.message
+    }
 
     //Get nonce and nrgPrice
     let retVal = null
@@ -432,6 +458,7 @@ export class AionPay {
 
     this.showConfirm = true
     this.visible = false
+    this.inputDialogEnable = false
 
     console.log(this.encodedTxn)
 
@@ -462,22 +489,13 @@ export class AionPay {
     }
   }
 
-  _parseErrorFromGQLResponse(res) {
-    let errors = res["errors"] as object[]
-
-    if (errors && errors.length > 0) {
-      this.isError = true
-      this.errors.push((errors[0])["message"])
-    }
-  }
-
   renderError() {
 
     return (
-      <div class="error">
+      <div class="error-section">
         {this.isError ?
-          <div role="alert" class="c-alert c-alert--warning">
-            <button class="c-button c-button--close" onClick={this.handleHideError}>&times;</button>
+          <div class="notification is-warning is-small" >
+            <button class="delete" onClick={this.handleHideError}>&times;</button>
             <ul>
               {this.errors.map((msg) => <li>{msg}</li>)}
             </ul>
@@ -487,18 +505,88 @@ export class AionPay {
     );
   }
 
+  renderSelectProvider() {
+    return (
+      <div>
+        <div class="modal is-active">
+          <div class="modal-background"></div>
+          <div class="modal-card">
+            <header class="modal-card-head">
+              <img src={Constant.aion_logo} class="aion-image"></img>
+              <p class="modal-card-title">Choose your wallet provider</p>
+              <button class="delete" aria-label="close" onClick={this.handleHidePaymentDialog}>&times;</button>
+            </header>
+            <section class="modal-card-body">
+              {this.renderError()}
+
+
+              <div class="field">
+                <div class="control">
+                  <label class="label is-small">
+                    <input type="radio" name="unlock_by" value="ledger"
+                           checked={this.unlockBy === 'ledger'}
+                           onClick={(event) => this.handleUnlockBy(event)}
+                    ></input>
+                    &nbsp;Ledger
+                  </label>
+                  <label class="label is-small">
+                    <input type="radio" name="unlock_by" value="keystore"
+                           checked={this.unlockBy === 'keystore'}
+                           onClick={(event) => this.handleUnlockBy(event)}
+                    >
+                    </input>
+                    &nbsp;Keystore File
+                  </label>
+                  <label class="label is-small">
+                    <input type="radio" name="unlock_by" value="private_key"
+                           checked={this.unlockBy === 'private_key'}
+                           onClick={(event) => this.handleUnlockBy(event)}></input>
+                    &nbsp;Private Key
+                  </label>
+                </div>
+              </div>
+              <hr/>
+              <div class="form">
+                {this.renderUnlockOptions()}
+                <div class="field">
+                  <label class="label">&nbsp;&nbsp;</label>
+                  <div class="control">
+                    <input id="from" placeholder="From Address" class="input is-small" value={this.from}
+                           onInput={(e) => this.handleFromInput(e)}
+                           readOnly={true} disabled/>
+                    {this.fromBalance ?
+                      <label
+                        class="label is-small from-balance is-pulled-right">Balance: {this.fromBalance} AION</label> : null
+                    }
+                  </div>
+                </div>
+
+              </div>
+            </section>
+            <footer class="modal-card-foot">
+              <button class="button is-primary is-small is-rounded is-pulled-right" disabled={!this.from}
+                      onClick={this.handleShowInputDialog}>Next</button>
+              <button class="button  is-danger is-small is-rounded is-right" onClick={this.handleHidePaymentDialog}>Cancel</button>
+            </footer>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   renderUnlockOptions() {
 
     return (
       <div>
         {this.unlockBy == 'private_key' ?
-          <div class="o-form-element">
-            <label class="c-label" htmlFor="private_key">Private Key</label>
-            <input id="private_key" placeholder="Private Key" class="c-field" value={this.privateKey}
-                   type="password"
-                   onInput={(e) => this.handlePrivateKeyInput(e)}
-                   onBlur={this.handleDerivePublicKey}
-            />
+          <div class="field">
+            <label class="label is-small">Private Key</label>
+            <div class="control">
+              <input id="private_key" placeholder="Private Key" class="input  is-small" value={this.privateKey}
+                     type="password"
+                     onInput={(e) => this.handlePrivateKeyInput(e)}
+                     onBlur={this.handleDerivePublicKey}></input>
+            </div>
           </div> : null
         }
 
@@ -507,11 +595,12 @@ export class AionPay {
         }
 
         {this.unlockBy == 'ledger' ?
-          <div class="o-form-element u-center-block">
-            <label class="c-label" htmlFor="private_key"></label>
-            <button class="c-button c-button--info u-small u-center-block__content u-center-block__content--horizontal"
-                    onClick={this.handleLedgerConnect}>Connect To Ledger</button>
-
+          <div class="field">
+            <div class="control">
+              <button class="button is-small is-danger is-focused is-rounded is-outlined"
+                      onClick={this.handleLedgerConnect}>Connect To Ledger
+              </button>
+            </div>
           </div> : null
         }
       </div>
@@ -519,61 +608,49 @@ export class AionPay {
   }
 
   _renderUnlockByKeystore() {
-    var ks_unlock_progressStyle = {
-      width: this.keystoreLoadingPercentage + '%',
-    };
-
-    // var inProgress = this.keystoreLoadingPercentage && this.keystoreLoadingPercentage != 0 && this.keystoreLoadingPercentage != 100
-
     return (
-      <div class="o-form-element keystore-input">
-        <div class="c-input-group">
-          <div class="o-field">
-            <label class="c-label" htmlFor="private_key">Key Store File</label>
+      <div>
+        <div class="field is-small">
+          <label class="label is-small" htmlFor="private_key">Key Store File</label>
+          <div class="control">
             <input id="file-upload"
+                   class="is-small"
                    type="file"
                    accept="*"
                    onChange={(e) => this.handleKeyStoreFileSelected(e)}>
             </input>
           </div>
-          <div class="o-field">
-            <label class="c-label" htmlFor="keystore_password">Passowrd</label>
+        </div>
+
+        <div class="field">
+          <label class="label is-small" htmlFor="keystore_password">Passowrd</label>
+          <div class="control">
             <input id="keystore_password"
                    type="password"
-                   class="c-field"
+                   class="input is-small"
                    value={this.keystore_password}
                    onInput={this.handleKeystorePasswordInput}
             ></input>
           </div>
-          <div class="o-field">
-            <label class="c-label" htmlFor="unlock_button">&nbsp;</label>
-            <button name="unlock_button" type="button"
-                    class="c-button c-button--success"
+        </div>
+        <div class="field is-grouped">
+          <div class="control is-pulled-right">
+            <button name="unlock_button"
+                    class="button is-small is-danger is-focused is-rounded is-outlined"
                     onClick={this.handleUnlockKeystore}
-
-            >Unlock
-            </button>
+            >Unlock</button>
           </div>
         </div>
 
         {this.keystoreLoadingPercentage && this.keystoreLoadingPercentage != 0 && this.keystoreLoadingPercentage != 100 ?
-          <div role="dialog" class="o-modal o-modal o-modal--visible">
-            <div class="c-card">
-              <header class="c-card__header">
-                <h2 class="c-heading">Unlocking Keystore ...</h2>
-              </header>
 
-              <div class="c-card__body">
-                <div class="c-progress u-xsmall">
-                  <div role="progressbar" aria-valuetext={this.keystoreLoadingPercentage + "% complete"}
-                       aria-valuenow={this.keystoreLoadingPercentage} aria-valuemin="0"
-                       aria-valuemax="100"
-                       style={ks_unlock_progressStyle}
-                       class="c-progress__bar">
-                    {this.keystoreLoadingPercentage + "%"}
-                  </div>
-                </div>
-              </div>
+          <div class="modal is-active">
+            <div class="modal-background "></div>
+            <div class="modal-card">
+              <label class="color-white">Unlocking keystore ... {this.keystoreLoadingPercentage}%</label>
+              <progress class="progress" value={this.keystoreLoadingPercentage}
+                        max="100">{this.keystoreLoadingPercentage}%
+              </progress>
             </div>
           </div>
           : null
@@ -584,106 +661,126 @@ export class AionPay {
   }
 
   renderInputForm() {
-    return (
-
+    return(
       <div>
-        <div aria-hidden class="c-overlay c-overlay--visible"></div>
-        <div role="dialog" class="o-modal o-modal--visible">
-          <div class="c-card">
-            <header class="c-card__header">
-              <button type="button" class="c-button c-button--close"
-                      onClick={this.handleHidePaymentDialog}>&times;</button>
-              <div class="aion-heading">
-                <img src={Constant.aion_logo} class="aion-image"></img>
-                <h2 class="c-heading"> Transfer AION</h2>
-              </div>
+        <div class="modal is-active">
+          <div class="modal-background"></div>
+          <div class="modal-card">
+            <header class="modal-card-head">
+              <img src={Constant.aion_logo} class="aion-image"></img>
+              <p class="modal-card-title">Transfer AION</p>
+              <button class="delete" aria-label="close" onClick={this.handleHidePaymentDialog}>&times;</button>
             </header>
+            <section class="modal-card-body form">
 
-            {this.renderError()}
+              {this.renderError()}
 
-            <div class="c-card__body o-panel scrolling-container">
-
-              <fieldset class="o-fieldset aion-unlock">
-                <legend class="o-fieldset__legend">Unlock using</legend>
-                <div class="o-grid o-grid--demo u-small">
-                  <div class="o-grid__cell">
-                    <div class="o-grid-text">
-                      <label class="c-field c-field--choice">
-                        <input type="radio" name="unlock_by" value="private_key"
-                               checked={this.unlockBy === 'private_key'}
-                               onClick={(event) => this.handleUnlockBy(event)}></input>
-                        &nbsp;Private Key
-                      </label>
-                    </div>
-                  </div>
-                  <div class="o-grid__cell">
-                    <div class="o-grid-text">
-                      <label class="c-field c-field--choice">
-                        <input type="radio" name="unlock_by" value="keystore"
-                               checked={this.unlockBy === 'keystore'}
-                               onClick={(event) => this.handleUnlockBy(event)}
-                        >
-                        </input>
-                        &nbsp;Keystore File
-                      </label>
-                    </div>
-                  </div>
-                  <div class="o-grid__cell">
-                    <div class="o-grid-text">
-                      <label class="c-field c-field--choice">
-                        <input type="radio" name="unlock_by" value="ledger"
-                               checked={this.unlockBy === 'ledger'}
-                               onClick={(event) => this.handleUnlockBy(event)}
-                        >
-                        </input>
-                        &nbsp;Ledger
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-              </fieldset>
-              <fieldset class="o-fieldset">
-
-                {this.renderUnlockOptions()}
-
-                <div class="o-form-element">
-                  <label class="c-label" htmlFor="from">From</label>
-                  <input id="from" placeholder="From Address" class="c-field" value={this.from}
+              <div class="field">
+                <label class="label is-small" htmlFor="from">From</label>
+                <div class="control">
+                  <input id="from" placeholder="From Address" class="input is-small" value={this.from}
                          onInput={(e) => this.handleFromInput(e)}
                          readOnly={true} disabled/>
                   {this.fromBalance ?
-                    <label class="u-xsmall from-balance">Balance: {this.fromBalance} AION</label> : null
+                    <label class="label is-small is-pulled-right from-balance">Balance: {this.fromBalance} AION</label> : null
                   }
                 </div>
+              </div>
 
-                <div class="o-form-element">
-                  <label class="c-label" htmlFor="to">To</label>
-                  <input id="to" placeholder="To Address"
-                         class="c-field" value={this._to}
-                         onInput={this.handleToInput}
-                         readonly={this.to_readonly}
-                  />
+              <div class="field">
+                <label class="label is-small" htmlFor="to">To</label>
+                <div class="control">
+                <input id="to" placeholder="To Address"
+                       class="input is-small" value={this._to}
+                       onInput={this.handleToInput}
+                       readOnly={this.to_readonly}
+                />
                 </div>
+              </div>
 
-                <div class="o-form-element">
-                  <label class="c-label" htmlFor="value">Amount</label>
-                  <input id="value" placeholder="Enter amount" class="c-field" value={this.value}
-                         type="number"
-                         onInput={this.handleValueInput}/>
+              <div class="field">
+                <label class="label is-small" htmlFor="value">Amount</label>
+                <div class="control">
+                <input id="value" placeholder="Enter amount" class="input is-small" value={this.value}
+                       type="number"
+                       onInput={this.handleValueInput}/>
                 </div>
-              </fieldset>
+              </div>
 
+              <div class="field">
+                <label class="label is-small" htmlFor="message">Message</label>
+                <div class="control">
+                  <textarea id="message" class="textarea is-small" placeholder="Optional message"
+                            onInput={this.handleMessageInput}
+                  >{this.message}</textarea>
+                </div>
+              </div>
+            </section>
 
-            </div>
-
-            <footer class="c-card__footer">
-              <button type="button" class="c-button c-button--success" onClick={this.signPayment}>Send</button>
-              &nbsp;
-              <button type="button" class="c-button c-button" onClick={this.handleHidePaymentDialog}>Close
+            <footer class="modal-card-foot">
+              <button class="button is-primary is-small is-rounded"
+                      onClick={this.signPayment}>Next
+              </button>
+              <button class="button  is-danger is-small is-rounded"
+                      onClick={this.handleHidePaymentDialog}>Cancel
               </button>
             </footer>
+
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  renderShowConfirmation() {
+    return (
+      <div class="modal is-active">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+          <header class="modal-card-head">
+            <img src={Constant.aion_logo} class="aion-image"></img>
+            <p class="modal-card-title">Confirm Transaction</p>
+            <button class="delete" aria-label="close" onClick={this.handleHidePaymentDialog}>&times;</button>
+          </header>
+          <section class="modal-card-body form">
+
+            {this.renderError()}
+
+            <div class="columns">
+              <div class="column is-1"><label class="lable">From</label></div>
+              <div class="column">{this.encodedTxn.input.from}</div>
+            </div>
+            <div class="columns">
+              <div class="column is-1">To</div>
+              <div class="column">
+                {this.encodedTxn.input.to}
+              </div>
+            </div>
+            <div class="columns">
+              <div class="column is-1">Value</div>
+              <div class="column">{CryptoUtil.convertnAmpBalanceToAION(this.encodedTxn.input.value)} AION</div>
+            </div>
+            <div class="columns">
+              <div class="column is-1">Nrg</div>
+              <div class="column">{this.encodedTxn.input.gas}</div>
+            </div>
+            <div class="columns">
+              <div class="column is-1">Nrg Price</div>
+              <div class="column">{this.encodedTxn.input.gasPrice}</div>
+            </div>
+            <div class="columns">
+              <div class="column is-1">Raw Transaction</div>
+              <div class="column">
+                <textarea class="input is-small" rows={10} readOnly={true}>{this.encodedTxn.rawTransaction}</textarea>
+              </div>
+            </div>
+          </section>
+          <footer class="modal-card-foot">
+            <button type="button" class="button is-primary is-small is-rounded" onClick={this.confirmPayment}>Confirm
+            </button>
+            <button type="button" class="button is-danger is-small is-rounded" onClick={this.handleHidePaymentDialog}>Close
+            </button>
+          </footer>
         </div>
       </div>
     )
@@ -692,24 +789,20 @@ export class AionPay {
   renderTxnInProgress() {
     return (
       <div>
-        <div aria-hidden class="c-overlay c-overlay--visible"></div>
-        <div role="dialog" class="o-modal o-modal--visible">
-          <div class="c-card">
-            <header class="c-card__header">
-              <button type="button" class="c-button c-button--close"
-                      onClick={this.handleHideTransactionInprogressDialog}>&times;</button>
-              <div class="aion-heading">
-                <img src={Constant.aion_logo} class="aion-image"></img>
-                <h2 class="c-heading"> Sending AION</h2>
-              </div>
+        <div class="modal is-active">
+          <div class="modal-background"></div>
+          <div class="modal-card">
+            <header class="modal-card-head">
+              <img src={Constant.aion_logo} class="aion-image"></img>
+              <p class="modal-card-title">Sending AION</p>
+              <button class="delete" aria-label="close" onClick={this.handleHidePaymentDialog}>&times;</button>
             </header>
+            <section class="modal-card-body form">
+              {this.renderError()}
 
-            {this.renderError()}
-
-            <div class="c-card__body">
               {!this.txnDone ?
                 <div>
-                  <div class="loader">Loading ...</div>
+                  <div class="spinner">Loading ...</div>
                   &nbsp; <i>Sending transaction and waiting for at least one block confirmation. Please wait ...</i>
                 </div> :
                 <div>
@@ -722,111 +815,23 @@ export class AionPay {
                   }
                 </div>
               }
-            </div>
 
-            <footer class="c-card__footer">
-              <button type="button" class="c-button c-button"
-                      onClick={this.handleHideTransactionInprogressDialog}>Close
-              </button>
-            </footer>
+            </section>
           </div>
         </div>
       </div>
     )
   }
-
-  renderShowConfirmation() {
-    return (
-      <div>
-        <div aria-hidden class="c-overlay c-overlay--visible"></div>
-        <div role="dialog" class="o-modal o-modal--visible">
-          <div class="c-card">
-            <header class="c-card__header">
-              <button type="button" class="c-button c-button--close"
-                      onClick={this.handleCloseConfirmDialog}>&times;</button>
-              <div class="aion-heading">
-                <img src={Constant.aion_logo} class="aion-image"></img>
-                <h2 class="c-heading"> Confirm Transaction</h2>
-              </div>
-            </header>
-
-            {this.renderError()}
-
-            <div class="c-card__body confirm-dialog">
-              <div class="o-grid">
-                <div class="o-grid__cell o-grid__cell--width-10">
-                  <div class="o-grid-text">From</div>
-                </div>
-                <div class="o-grid__cell">
-                  <div class="o-grid-text">{this.encodedTxn.input.from}</div>
-                </div>
-              </div>
-              <div class="o-grid">
-                <div class="o-grid__cell o-grid__cell--width-10">
-                  <div class="o-grid-text">To</div>
-                </div>
-                <div class="o-grid__cell">
-                  <div class="o-grid-text">{this.encodedTxn.input.to}</div>
-                </div>
-              </div>
-
-              <div class="o-grid">
-                <div class="o-grid__cell o-grid__cell--width-10">
-                  <div class="o-grid-text">Value</div>
-                </div>
-                <div class="o-grid__cell">
-                  <div
-                    class="o-grid-text balance">{CryptoUtil.convertnAmpBalanceToAION(this.encodedTxn.input.value)} AION
-                  </div>
-                </div>
-              </div>
-
-              <div class="o-grid">
-                <div class="o-grid__cell o-grid__cell--width-10">
-                  <div class="o-grid-text">Nrg</div>
-                </div>
-                <div class="o-grid__cell">
-                  <div class="o-grid-text">{this.encodedTxn.input.gas}</div>
-                </div>
-              </div>
-
-              <div class="o-grid">
-                <div class="o-grid__cell o-grid__cell--width-10">
-                  <div class="o-grid-text">Nrg Price</div>
-                </div>
-                <div class="o-grid__cell">
-                  <div class="o-grid-text">{this.encodedTxn.input.gasPrice}</div>
-                </div>
-              </div>
-
-              <div class="o-grid">
-                <div class="o-grid__cell o-grid__cell--width-10">
-                  <div class="o-grid-text">Raw Transaction</div>
-                </div>
-                <div class="o-grid__cell">
-                  <div class="o-grid-text">
-                    <textarea class="c-field" rows={7} readonly={true}>{this.encodedTxn.rawTransaction}</textarea>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <footer class="c-card__footer">
-              <button type="button" class="c-button c-button--success" onClick={this.confirmPayment}>Confirm
-              </button>
-            </footer>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
 
   render() {
     return (
-      <div class="u-text u-small o-panel-container">
+      <div  class="aion-pay">
 
         {this.visible ?
+          this.renderSelectProvider() : null
+        }
+
+        {this.inputDialogEnable ?
           this.renderInputForm() : null
         }
 
@@ -837,15 +842,16 @@ export class AionPay {
         {this.showConfirm ?
           this.renderShowConfirmation() : null
         }
-
-        <button type="button" class="c-button pay-button u-high" onClick={this.handleShowPaymentDialog}>
+        <div id="pay" onClick={this.handleShowPaymentDialog}>
           <slot>
-            <span class="pay-button-text">
-              <img src={Constant.aion_logo} class="img-valign"></img>
-              {this.buttonText ? this.buttonText : this.default_button_text}
-            </span>
+            <button type="button" class="button pay-button is-primary">
+                <span class="pay-button-text">
+                  <img src={Constant.aion_logo} class="img-valign"></img>
+                  {this.buttonText ? this.buttonText : this.default_button_text}
+                </span>
+            </button>
           </slot>
-        </button>
+        </div>
       </div>
 
     );

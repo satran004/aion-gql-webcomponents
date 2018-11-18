@@ -5,6 +5,14 @@
 
 ## To use: 
 
+Add following in the <head> tag (Will be fixed in future)
+
+```
+ <script>
+    var global = global || window;
+  </script>
+```  
+
 ### Import aion-gql-webcomponents.js
 
 ```

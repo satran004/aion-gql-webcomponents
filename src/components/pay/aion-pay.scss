@@ -1,6 +1,14 @@
 @import '../../global/variables.scss';
 
+.aion-pay {
+  font-family: $font-family;
+  font-size: small;
+}
 button {
+  cursor: var(--pay-button-cursor, pointer);
+}
+
+#pay {
   cursor: var(--pay-button-cursor, pointer);
 }
 
@@ -17,22 +25,29 @@ button {
   }
 }
 
-.o-form-element {
+.form {
   padding-right: 10px;
-  .c-field {
+  .field {
     margin-right: 10px;
   }
+}
+
+.color-white {
+  color: #ffffff;
+}
+
+.error-section {
+  padding-bottom: 10px;
 }
 
 
 .pay-button {
   display: inline-block;
-  //background-color: #3700B3;
   text-align: center;
 }
 
 .pay-button {
-  background-color:  var(--pay-button-color, #BB86FC);
+  background-color:  var(--pay-button-color, #00d1b2);
   .img-valign {
     vertical-align: middle;
     width: 20px;
@@ -40,9 +55,9 @@ button {
   }
 
   .pay-button-text {
-    font-weight: var(--pay-button-font-weight, bolder);
+    font-weight: var(--pay-button-font-weight, normal);
     font-style: var(--pay-button-font-style, normal);
-    font-family: var(--pay-button-font-family, "Courier New");
+    font-family: var(--pay-button-font-family, $font-family);
   }
 }
 
@@ -64,37 +79,37 @@ button {
   color: #304FFE;
 }
 
-.confirm-dialog {
-  .o-grid {
-    margin-top: 10px;
-  }
+//.confirm-dialog {
+//  .o-grid {
+//    margin-top: 10px;
+//  }
+//
+//  .balance {
+//    font-weight: bold;
+//  }
+//}
 
-  .balance {
-    font-weight: bold;
-  }
-}
-
-.keystore-input {
-  .o-field {
-    margin-right: 20px;
-  }
-
-  .c-field {
-    border-top-left-radius: 4px !important;
-    border-bottom-left-radius: 4px !important;
-    border-left-width: 1px !important;
-  }
-
-  .c-progress {
-    margin-top: 5px;
-  }
-}
+//.keystore-input {
+//  .o-field {
+//    margin-right: 20px;
+//  }
+//
+//  .c-field {
+//    border-top-left-radius: 4px !important;
+//    border-bottom-left-radius: 4px !important;
+//    border-left-width: 1px !important;
+//  }
+//
+//  .c-progress {
+//    margin-top: 5px;
+//  }
+//}
 
 
-/** loader style **/
-.loader,
-.loader:before,
-.loader:after {
+/** spinner style **/
+.spinner,
+.spinner:before,
+.spinner:after {
   border-radius: 50%;
   width: 2.5em;
   height: 2.5em;
@@ -103,7 +118,7 @@ button {
   -webkit-animation: load7 1.8s infinite ease-in-out;
   animation: load7 1.8s infinite ease-in-out;
 }
-.loader {
+.spinner {
   color: #3057ff;
   font-size: 10px;
   margin: 80px auto;
@@ -115,18 +130,18 @@ button {
   -webkit-animation-delay: -0.16s;
   animation-delay: -0.16s;
 }
-.loader:before,
-.loader:after {
+.spinner:before,
+.spinner:after {
   content: '';
   position: absolute;
   top: 0;
 }
-.loader:before {
+.spinner:before {
   left: -3.5em;
   -webkit-animation-delay: -0.32s;
   animation-delay: -0.32s;
 }
-.loader:after {
+.spinner:after {
   left: 3.5em;
 }
 @-webkit-keyframes load7 {
@@ -149,4 +164,4 @@ button {
     box-shadow: 0 2.5em 0 0;
   }
 }
-/** loader style ends **/
+/** spinner style ends **/

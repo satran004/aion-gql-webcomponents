@@ -1,6 +1,7 @@
-@import url("https://unpkg.com/blaze-css@1.6.0/dist/blaze.min.css");
+@import "../../node_modules/bulma/bulma.sass";
+
 // Font Family
-$font-family: 'Open Sans', 'Helvetica Neue', Arial, Helvetica, sans-serif;
+$font-family: BlinkMacSystemFont, -apple-system, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
 
 // Basic Colors
 $white: #ffffff;

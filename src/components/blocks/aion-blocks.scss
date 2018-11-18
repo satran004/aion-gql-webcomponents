@@ -1,4 +1,6 @@
-@import '../../global/variables.scss';
+//blaze-css dependency will be removed in next release
+@import url("https://unpkg.com/blaze-css@1.6.0/dist/blaze.min.css");
+//@import '../../global/variables.scss';
 
 div {
   //background: $blue-steel;

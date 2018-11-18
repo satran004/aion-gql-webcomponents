@@ -85,7 +85,7 @@ export class AionBlocks {
         {this.blocks.map((blk) =>
           <div  class="c-card u-highest">
             <div class="c-card__item c-card__item--brand">#{blk.number}
-            <span class="title u-small">{blk.date.toDateString()} {blk.date.toLocaleTimeString()}</span>
+            <span class="u-small">{blk.date.toDateString()} {blk.date.toLocaleTimeString()}</span>
               <div class="u-small">
                 <a href={"https://mainnet.aion.network/#/block/" + blk.number} target="_blank">
                   <i> 0x{blk.hash}&nbsp;</i>
@@ -102,7 +102,7 @@ export class AionBlocks {
 
                       <li class="c-list__item" key={index}>
                         <div class="o-grid ">
-                          <div class="o-grid__cell o-grid__cell--width-20 title">
+                          <div class="o-grid__cell o-grid__cell--width-20">
                             Tx Hash
                           </div>
                           <div class="o-grid__cell">
@@ -114,7 +114,7 @@ export class AionBlocks {
                           </div>
                         </div>
                         <div class="o-grid">
-                          <div class="o-grid__cell o-grid__cell--width-20 title">
+                          <div class="o-grid__cell o-grid__cell--width-20">
                             From
                           </div>
                           <div class="o-grid__cell">
@@ -122,7 +122,7 @@ export class AionBlocks {
                           </div>
                         </div>
                         <div class="o-grid ">
-                          <div class="o-grid__cell o-grid__cell--width-20 title">
+                          <div class="o-grid__cell o-grid__cell--width-20">
                             To
                           </div>
                           <div class="o-grid__cell">
@@ -130,7 +130,7 @@ export class AionBlocks {
                           </div>
                         </div>
                         <div class="o-grid ">
-                          <div class="o-grid__cell o-grid__cell--width-20 title">
+                          <div class="o-grid__cell o-grid__cell--width-20">
                             Value
                           </div>
                           <div class="o-grid__cell">
