@@ -40,7 +40,7 @@
 
 <div class="container6">
 
-    <aion-pay id="donate" to="" gql-url="https://localhost/graphql" button-text=" Quick Transfer"></aion-pay>
+    <aion-pay id="donate" to="a0b851faadee3af7dcde48178036a3d683c8fe36653e10c6a49c1f7c6cb28798" gql-url="https://localhost/graphql" button-text=" Quick Transfer"></aion-pay>
 
      <!--<div>-->
      <!--<aion-pay gql-url="https://192.168.0.96/graphql" class="pay-button">-->
@@ -52,7 +52,25 @@
 <div>
   <aion-blocks limit="8" duration="10" gql-url="https://localhost/graphql"></aion-blocks>
 
+  <button onclick="todoListElement.show();">open</button>
 </div>
+
+<script>
+  const todoListElement = document.querySelector('aion-pay');
+
+  todoListElement.addEventListener('transactionCompleted', event => {
+    console.log(JSON.stringify(event.detail));
+
+  })
+
+  todoListElement.addEventListener('transactionFailed', event => {
+    console.log(JSON.stringify(event.detail));
+  })
+
+  todoListElement.addEventListener('transactionSubmitted', event => {
+    console.log(JSON.stringify(event.detail));
+  })
+</script>
 
 </body>
 </html>

@@ -1,6 +1,7 @@
 import '../../global/global.js'
 
-import {Component, Prop, State} from '@stencil/core';
+import {Component, Method, Prop, State} from '@stencil/core';
+import { Event, EventEmitter } from '@stencil/core';
 import {Constant} from "../../common/Constant";
 import {Transaction} from "../../common/Transaction";
 import {TxnResponse} from "../../common/TxnResponse";
@@ -69,6 +70,14 @@ export class AionPay {
 
   @State() txnResponse: TxnResponse = new TxnResponse()
 
+  //Events ----
+  @Event() transactionCompleted: EventEmitter
+
+  @Event() transactionInProgress: EventEmitter
+
+  @Event() transactionFailed: EventEmitter
+  //Events -----
+
   provider: WalletProvider
 
   service: AionPayService
@@ -116,6 +125,12 @@ export class AionPay {
 
     //initialize service
     this.service = new AionPayService(this.gqlUrl)
+  }
+
+  @Method()
+  show() {
+    this.handleResetData()
+    this.handleShowPaymentDialog()
   }
 
   //1st step wallet provider
@@ -170,7 +185,14 @@ export class AionPay {
     this.visible = false
 
     this.resetFromAddressData()
+
+    if(!this.to_readonly) { //only reset when not set through props
+      this.to = ''
+      this._to = ''
+    }
+
     this.value = 0
+    this.message = ''
     this.gas = 0
     this.gasPrice = 0
 
@@ -475,16 +497,24 @@ export class AionPay {
     this.txnDone = false
 
     try {
+      //transaction submitted events
+      this.transactionInProgress.emit(encodedTx)
 
       this.txnResponse = await this.service.sendRawTransaction(encodedTx)
       console.log(this.txnResponse)
       this.txnDone = true
+
+      //Emit transaction successful event
+      this.transactionCompleted.emit(this.txnResponse)
 
     } catch (error) {
       this.txnDone = true
       this.isError = true
       this.errors.push("Error sending the transaction")
       this.errors.push("[Reason] " + error)
+
+      //Emit transaction failed
+      this.transactionFailed.emit(error.toString())
       throw error
     }
   }
