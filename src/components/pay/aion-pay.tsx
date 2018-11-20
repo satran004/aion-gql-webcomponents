@@ -28,7 +28,15 @@ export class AionPay {
 
   default_button_text: string = "Pay"
 
+  //When to attribute is mentioned
   to_readonly: boolean = false
+
+  //When all input fields are passed from outside. Exp: showWithData()
+  readonly: boolean = false
+
+  //It's passed dynamically from outside. Same is returned through events.
+  // So that consumer can match with response.
+  refId: string
 
   @State() unlockBy: string = "ledger"
 
@@ -71,11 +79,17 @@ export class AionPay {
   @State() txnResponse: TxnResponse = new TxnResponse()
 
   //Events ----
-  @Event() transactionCompleted: EventEmitter
+  @Event({
+    eventName: 'TXN_COMPLETED'
+  }) transactionCompleted: EventEmitter
 
-  @Event() transactionInProgress: EventEmitter
+  @Event({
+    eventName: 'TXN_INPROGRESS'
+  }) transactionInProgress: EventEmitter
 
-  @Event() transactionFailed: EventEmitter
+  @Event({
+    eventName: 'TXN_FAILED'
+  }) transactionFailed: EventEmitter
   //Events -----
 
   provider: WalletProvider
@@ -128,8 +142,22 @@ export class AionPay {
   }
 
   @Method()
-  show() {
+  refreshAndShow() {
     this.handleResetData()
+    this.handleShowPaymentDialog()
+  }
+
+  @Method()
+  showWithData(refId: string, to: string, value: number, data: string) {
+    this.handleResetData()
+
+    this._to = to
+    this.value = value
+    this.message = data
+
+    this.readonly = true
+    this.refId = refId;
+
     this.handleShowPaymentDialog()
   }
 
@@ -179,15 +207,18 @@ export class AionPay {
   }
 
   handleResetData() {
+    //dialog state
     this.txnInProgress = false
     this.showConfirm = false
     this.txnDone = false
     this.visible = false
 
+    //sender state
     this.resetFromAddressData()
 
+    //txn state
     if(!this.to_readonly) { //only reset when not set through props
-      this.to = ''
+      //this.to = ''
       this._to = ''
     }
 
@@ -196,8 +227,11 @@ export class AionPay {
     this.gas = 0
     this.gasPrice = 0
 
-    //sensitive info. keystore loading
+    //error state
+    this.isError = false
+    this.errors.length = 0
 
+    //response state
     this.resetTxnResponse()
   }
 
@@ -498,14 +532,14 @@ export class AionPay {
 
     try {
       //transaction submitted events
-      this.transactionInProgress.emit(encodedTx)
+      this.transactionInProgress.emit({refId: this.refId, data: encodedTx})
 
       this.txnResponse = await this.service.sendRawTransaction(encodedTx)
       console.log(this.txnResponse)
       this.txnDone = true
 
       //Emit transaction successful event
-      this.transactionCompleted.emit(this.txnResponse)
+      this.transactionCompleted.emit({refId: this.refId, data: this.txnResponse})
 
     } catch (error) {
       this.txnDone = true
@@ -514,8 +548,10 @@ export class AionPay {
       this.errors.push("[Reason] " + error)
 
       //Emit transaction failed
-      this.transactionFailed.emit(error.toString())
+      this.transactionFailed.emit({refId: this.refId, data: error.toString()})
       throw error
+    } finally {
+
     }
   }
 
@@ -723,7 +759,7 @@ export class AionPay {
                 <input id="to" placeholder="To Address"
                        class="input is-small" value={this._to}
                        onInput={this.handleToInput}
-                       readOnly={this.to_readonly}
+                       readOnly={this.to_readonly || this.readonly}
                 />
                 </div>
               </div>
@@ -733,7 +769,9 @@ export class AionPay {
                 <div class="control">
                 <input id="value" placeholder="Enter amount" class="input is-small" value={this.value}
                        type="number"
-                       onInput={this.handleValueInput}/>
+                       onInput={this.handleValueInput}
+                       readonly={this.readonly}
+                />
                 </div>
               </div>
 
@@ -742,6 +780,7 @@ export class AionPay {
                 <div class="control">
                   <textarea id="message" class="textarea is-small" placeholder="Optional message"
                             onInput={this.handleMessageInput}
+                            readonly={this.readonly}
                   >{this.message}</textarea>
                 </div>
               </div>
@@ -778,29 +817,29 @@ export class AionPay {
 
             <div class="columns">
               <div class="column is-1"><label class="lable">From</label></div>
-              <div class="column">{this.encodedTxn.input.from}</div>
+              <div class="column field">{this.encodedTxn.input.from}</div>
             </div>
             <div class="columns">
               <div class="column is-1">To</div>
-              <div class="column">
+              <div class="column field">
                 {this.encodedTxn.input.to}
               </div>
             </div>
             <div class="columns">
               <div class="column is-1">Value</div>
-              <div class="column">{CryptoUtil.convertnAmpBalanceToAION(this.encodedTxn.input.value)} AION</div>
+              <div class="column field">{CryptoUtil.convertnAmpBalanceToAION(this.encodedTxn.input.value)} AION</div>
             </div>
             <div class="columns">
               <div class="column is-1">Nrg</div>
-              <div class="column">{this.encodedTxn.input.gas}</div>
+              <div class="column field">{this.encodedTxn.input.gas}</div>
             </div>
             <div class="columns">
               <div class="column is-1">Nrg Price</div>
-              <div class="column">{this.encodedTxn.input.gasPrice}</div>
+              <div class="column field">{this.encodedTxn.input.gasPrice}</div>
             </div>
             <div class="columns">
               <div class="column is-1">Raw Transaction</div>
-              <div class="column">
+              <div class="column field">
                 <textarea class="input is-small" rows={10} readOnly={true}>{this.encodedTxn.rawTransaction}</textarea>
               </div>
             </div>

@@ -38,38 +38,63 @@
 </head>
 <body>
 
-<div class="container6">
 
-    <aion-pay id="donate" to="a0b851faadee3af7dcde48178036a3d683c8fe36653e10c6a49c1f7c6cb28798" gql-url="https://localhost/graphql" button-text=" Quick Transfer"></aion-pay>
+<aion-pay id="donate" to="a0b851faadee3af7dcde48178036a3d683c8fe36653e10c6a49c1f7c6cb28798" gql-url="https://192.168.0.96/graphql" button-text=" Quick Transfer"></aion-pay>
 
      <!--<div>-->
      <!--<aion-pay gql-url="https://192.168.0.96/graphql" class="pay-button">-->
      <!--<button>Pay me</button>-->
      <!--</aion-pay>-->
      <!--</div>-->
-</div>
+
+<aion-pay id="generic" gql-url="https://192.168.0.96/graphql" button-text="Send Any Message"></aion-pay>
+
+
 
 <div>
   <aion-blocks limit="8" duration="10" gql-url="https://localhost/graphql"></aion-blocks>
 
   <button onclick="todoListElement.show();">open</button>
+
+  <button onclick="genericTransferButton.showWithData(uniqueId(), 'a01112158d69a368dfebb9db63a903738cf404449d65331e9a045148793c3df3', 500, 'any data');">
+    Send Transaction
+  </button>
 </div>
 
 <script>
-  const todoListElement = document.querySelector('aion-pay');
+  const todoListElement = document.querySelector('#donate');
 
-  todoListElement.addEventListener('transactionCompleted', event => {
+  todoListElement.addEventListener('TXN_COMPLETED', event => {
     console.log(JSON.stringify(event.detail));
 
   })
 
-  todoListElement.addEventListener('transactionFailed', event => {
+  todoListElement.addEventListener('TXN_FAILED', event => {
     console.log(JSON.stringify(event.detail));
   })
 
-  todoListElement.addEventListener('transactionSubmitted', event => {
+  todoListElement.addEventListener('TXN_INPROGRESS', event => {
     console.log(JSON.stringify(event.detail));
   })
+
+  const genericTransferButton = document.querySelector('#generic');
+
+  genericTransferButton.addEventListener('TXN_COMPLETED', event => {
+    console.log(JSON.stringify(event.detail));
+
+  })
+
+  genericTransferButton.addEventListener('TXN_FAILED', event => {
+    console.log(JSON.stringify(event.detail));
+  })
+
+  genericTransferButton.addEventListener('TXN_INPROGRESS', event => {
+    console.log(JSON.stringify(event.detail));
+  })
+
+  function uniqueId() {
+    return '_' + Math.random().toString(36).substr(2, 9);
+  }
 </script>
 
 </body>
