@@ -26,11 +26,16 @@ export namespace Components {
   interface AionPay {
     'buttonText': string;
     'gqlUrl': string;
+    'refreshAndShow': () => void;
+    'showWithData': (refId: string, to: string, value: number, data: string) => void;
     'to': string;
   }
   interface AionPayAttributes extends StencilHTMLAttributes {
     'buttonText'?: string;
     'gqlUrl'?: string;
+    'onTXN_COMPLETED'?: (event: CustomEvent) => void;
+    'onTXN_FAILED'?: (event: CustomEvent) => void;
+    'onTXN_INPROGRESS'?: (event: CustomEvent) => void;
     'to'?: string;
   }
 }

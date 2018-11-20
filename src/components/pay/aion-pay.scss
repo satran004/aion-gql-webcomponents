@@ -79,32 +79,10 @@ button {
   color: #304FFE;
 }
 
-//.confirm-dialog {
-//  .o-grid {
-//    margin-top: 10px;
-//  }
-//
-//  .balance {
-//    font-weight: bold;
-//  }
-//}
-
-//.keystore-input {
-//  .o-field {
-//    margin-right: 20px;
-//  }
-//
-//  .c-field {
-//    border-top-left-radius: 4px !important;
-//    border-bottom-left-radius: 4px !important;
-//    border-left-width: 1px !important;
-//  }
-//
-//  .c-progress {
-//    margin-top: 5px;
-//  }
-//}
-
+textarea {
+  min-height: inherit;
+  height: auto !important;
+}
 
 /** spinner style **/
 .spinner,
