@@ -51,6 +51,9 @@ export class AionPay {
 
   @State() showConfirm: boolean = false
 
+  @State() isNotification: boolean = false
+  @State() notification: string
+
   @State() isError: boolean = false
 
   @State() errors: string[] = [];
@@ -106,6 +109,7 @@ export class AionPay {
     this.handleHideTransactionInprogressDialog = this.handleHideTransactionInprogressDialog.bind(this)
     this.handleCloseConfirmDialog = this.handleCloseConfirmDialog.bind(this)
     this.handleHideError = this.handleHideError.bind(this)
+    this.handleHideNotification = this.handleHideNotification.bind(this)
     this.handleResetData = this.handleResetData.bind(this)
 
     this.handleShowInputDialog = this.handleShowInputDialog.bind(this)
@@ -209,6 +213,11 @@ export class AionPay {
     this.errors.length = 0
   }
 
+  handleHideNotification() {
+    this.isNotification = false
+    this.notification = null
+  }
+
   handleResetData() {
     //dialog state
     this.txnInProgress = false
@@ -233,6 +242,9 @@ export class AionPay {
     //error state
     this.isError = false
     this.errors.length = 0
+
+    this.isNotification = false
+    this.notification = ''
 
     //response state
     this.resetTxnResponse()
@@ -300,6 +312,22 @@ export class AionPay {
 
   handleMessageInput(event) {
     this.message = event.target.value;
+
+    //Fix: Ledger txn fails for longer message
+    if(this.unlockBy == 'ledger') {
+      if(this.message.length > 50) {
+        if(!this.isError) {
+          this.isError = true
+          this.errors.length = 0
+          this.errors.push("Please keep your message within 50 characters while using ledger. Or, your transaction may fail.")
+        }
+      } else {
+        if(this.isError) {
+          this.isError = false
+          this.errors.length = 0
+        }
+      }
+    }
   }
 
   handlePrivateKeyInput(event) {
@@ -530,6 +558,11 @@ export class AionPay {
 
     console.log("Fetching current nonce " + txn.nonce)
 
+    if(this.unlockBy == 'ledger') {
+      this.isNotification = true
+      this.notification = "Please check your ledger device to confirm the transaction."
+    }
+
     try {
       this.encodedTxn = await this.provider.sign(txn) //TransactionUtil.signTransaction(txn, this.privateKey)
     } catch (error) {
@@ -591,7 +624,7 @@ export class AionPay {
       <div class="error-section">
         {this.isError ?
           <div class="notification is-warning is-small" >
-            <button class="delete" onClick={this.handleHideError}>&times;</button>
+            <button class="delete" onClick={this.handleHideError}></button>
             <ul>
               {this.errors.map((msg) => <li>{msg}</li>)}
             </ul>
@@ -599,6 +632,19 @@ export class AionPay {
         }
       </div>
     );
+  }
+
+  renderNotification() {
+    return (
+      <div>
+        {this.isNotification ?
+          <div class="notification is-info error-section">
+            <button class="delete" onClick={this.handleHideNotification}></button>
+            {this.notification}
+          </div> : null
+        }
+      </div>
+    )
   }
 
   renderSelectProvider() {
@@ -770,6 +816,8 @@ export class AionPay {
             <section class="modal-card-body form">
 
               {this.renderError()}
+
+              {this.renderNotification()}
 
               <div class="field">
                 <label class="label is-small" htmlFor="from">From</label>
