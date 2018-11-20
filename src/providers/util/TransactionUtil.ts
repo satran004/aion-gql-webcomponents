@@ -11,6 +11,7 @@ import {SignedTransaction} from "../../common/SignedTransaction";
 export class TransactionUtil {
 
   static defaultNrgPrice = 10000000000
+  static defaultNrgLimit = 22000;
 
   public static signTransaction(transaction: Transaction, privateKey: string) {
 

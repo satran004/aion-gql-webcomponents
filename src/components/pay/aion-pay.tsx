@@ -12,6 +12,7 @@ import PrivateKeyWalletProvider from "../../providers/impl/PrivateKeyWalletProvi
 import {WalletProvider} from "../../providers/WalletProvider";
 import KeystoreWalletProvider from "../../providers/impl/KeystoreWalletProvider";
 import AionPayService from "./AionPayService";
+import {TransactionUtil} from "../../providers/util/TransactionUtil";
 
 @Component({
   tag: 'aion-pay',
@@ -70,9 +71,9 @@ export class AionPay {
   @State() keystore_password: string //only for keystore based access
   @State() keystoreLoadingPercentage: number = 0
 
-  @State() gas: number
+  @State() gas: number = TransactionUtil.defaultNrgLimit //default value
 
-  @State() gasPrice: number
+  @State() gasPrice = TransactionUtil.defaultNrgPrice
 
   @State() encodedTxn: SignedTransaction
 
@@ -117,6 +118,8 @@ export class AionPay {
     this.handleFromInput = this.handleFromInput.bind(this)
     this.handleToInput = this.handleToInput.bind(this)
     this.handleValueInput = this.handleValueInput.bind(this)
+    this.handleNrgInput = this.handleNrgInput.bind(this)
+    this.handleNrgPriceInput = this.handleNrgPriceInput.bind(this)
     this.handleMessageInput = this.handleMessageInput.bind(this)
     this.handlePrivateKeyInput = this.handlePrivateKeyInput.bind(this)
     this.handleKeyStoreFileSelected = this.handleKeyStoreFileSelected.bind(this)
@@ -224,8 +227,8 @@ export class AionPay {
 
     this.value = 0
     this.message = ''
-    this.gas = 0
-    this.gasPrice = 0
+    this.gas = TransactionUtil.defaultNrgLimit
+    this.gasPrice = TransactionUtil.defaultNrgPrice
 
     //error state
     this.isError = false
@@ -287,6 +290,14 @@ export class AionPay {
     }
   }
 
+  handleNrgInput(event) {
+    this.gas = event.target.value;
+  }
+
+  handleNrgPriceInput(event) {
+    this.gasPrice = event.target.value;
+  }
+
   handleMessageInput(event) {
     this.message = event.target.value;
   }
@@ -331,10 +342,13 @@ export class AionPay {
   async updateBalance() {
 
     try {
-      let balance = await this.service.fetchBalance(this.from)
+      let [balance, nrgPrice] = await this.service.fetchBalance(this.from)
 
       if (balance)
         this.fromBalance = CryptoUtil.convertnAmpBalanceToAION(balance)
+
+     if(nrgPrice)
+       this.gasPrice = nrgPrice
 
     } catch (error) {
       this.isError = true
@@ -449,7 +463,6 @@ export class AionPay {
     return !this.isError
   }
 
-
   async signPayment(e) {
     e.preventDefault()
 
@@ -476,10 +489,13 @@ export class AionPay {
       txn.data = this.message
     }
 
+    txn.gas = this.gas + ''
+    txn.gasPrice = this.gasPrice + ''
+
     //Get nonce and nrgPrice
     let retVal = null
     try {
-      retVal = await this.service.fetchNonce(this.from)
+      retVal = await this.service.fetchNonceNrg(this.from, txn)
     } catch (e) {
       this.isError = true
       this.errors.push("Error to get nonce for the address")
@@ -487,7 +503,7 @@ export class AionPay {
       return;
     }
 
-    if (!retVal) { //Not able to get nonce and nrgPrice
+    if (!retVal) { //Not able to get nonce and estimated nrg
       this.isError = true
       this.errors.push("Unable to get nonce and nrgPrice from AION kernel")
       return
@@ -495,8 +511,22 @@ export class AionPay {
     //End - Get nonce & nrgPrice
 
     txn.nonce = retVal[0]
-    if (retVal[1])
-      txn.gasPrice = retVal[1]
+
+    //Check nrglimit with estimated nrg
+    let estimatedNrg = retVal[1]
+    if (estimatedNrg && estimatedNrg > 0) {
+      if(Number(txn.gas) < estimatedNrg) {
+        let r = confirm("Estimated Nrg     : " + estimatedNrg + "\nDefault Nrg Limit : " + txn.gas
+        +"\n\nDo you want to update the Nrg Limit to " + estimatedNrg + "?");
+
+        if(r == true) {
+          this.gas = estimatedNrg
+          return
+        } else {
+          //Just continue;
+        }
+      }
+    }
 
     console.log("Fetching current nonce " + txn.nonce)
 
@@ -772,6 +802,32 @@ export class AionPay {
                        onInput={this.handleValueInput}
                        readonly={this.readonly}
                 />
+                </div>
+              </div>
+
+              <div class="columns">
+                <div class="column">
+                <div class="field">
+                  <label class="label is-small" htmlFor="nrg">Nrg Limit</label>
+                  <div class="control">
+                    <input id="nrg" placeholder="Nrg Limit" class="input is-small" value={this.gas}
+                           type="number"
+                           onInput={this.handleNrgInput}
+                    />
+                  </div>
+                </div>
+
+                </div>
+                <div class="column">
+                <div class="field">
+                  <label class="label is-small" htmlFor="nrgPrice">Nrg Price</label>
+                  <div class="control">
+                    <input id="nrgPrice" placeholder="Nrg Price" class="input is-small" value={this.gasPrice}
+                           type="number"
+                           onInput={this.handleNrgPriceInput}
+                    />
+                  </div>
+                </div>
                 </div>
               </div>
 

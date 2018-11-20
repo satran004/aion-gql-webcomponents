@@ -1,16 +1,17 @@
 import {TxnResponse} from "../../common/TxnResponse";
+import {Transaction} from "../../common/Transaction";
 
 export default class AionPayService {
 
   private gqlUrl: string
 
-  NONCE_QUERY: string = `
-    query nonce($address: String!) {
+  NONCE_NRG_QUERY: string = `
+    query nonceAndNrg($address: String!, $txArgs:  TxArgsInput!) {
      chainApi {
       nonce(address: $address) 
      }
      txnApi {
-       nrgPrice
+       estimateNrgByTxArgs(txArgs: $txArgs)
      }
    }`
 
@@ -18,6 +19,9 @@ export default class AionPayService {
     query nonce($address: String!) {
      chainApi {
       balance(address: $address) 
+     }
+     txnApi {
+      nrgPrice
      }
     }`
 
@@ -39,11 +43,22 @@ export default class AionPayService {
     this.gqlUrl = gqlUrl
   }
 
-  fetchNonce(address: string) {
+  fetchNonceNrg(address: string, txn: Transaction) {
+
+    //For estimateNrg call
+    let txArgs = {
+      to: txn.to,
+      from: address,
+      value: txn.value,
+      data: txn.data,
+    }
+
+    console.log(txArgs)
+
     return fetch(this.gqlUrl, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({"query": this.NONCE_QUERY, "variables": {"address": address}}),
+      body: JSON.stringify({"query": this.NONCE_NRG_QUERY, "variables": {"address": address, "txArgs": txArgs}}),
     })
       .then(res => res.json())
       .then(res => {
@@ -56,28 +71,20 @@ export default class AionPayService {
 
         let nonceData = ((res["data"])["chainApi"])["nonce"]
 
-        //Get current nrgPrice
-        let nrgPriceData = null
+        let estimatedNrg = null
         try {
-          nrgPriceData = ((res["data"])["txnApi"])["nrgPrice"]
+          estimatedNrg = ((res["data"])["txnApi"])["estimateNrgByTxArgs"] as number
         } catch (e) {
-          console.log("Error getting current nrg price")
+          console.log("Error getting estimated energy")
         }
 
-        if (nrgPriceData) {
+        try {
           let nonce = nonceData as number;
 
-          let nrgPrice = null
-          try {
-            if (nrgPriceData)
-              nrgPrice = nrgPriceData as number
-          } catch (e) {
-            //ignore. try cat is just for safer side
-          }
-
-          return [nonce, nrgPrice]
-        } else {
-          throw new Error("Unable to get nrgPrice")
+          return [nonce, estimatedNrg]
+        } catch (e) {
+          console.log(e)
+          throw new Error("Unable to get nonce or estimated nrg")
         }
       })
   }
@@ -100,9 +107,23 @@ export default class AionPayService {
 
         let data = ((res["data"])["chainApi"])["balance"]
 
+        //also check nrgPrice
+        let nrgPriceData = null
+        try {
+          nrgPriceData = ((res["data"])["txnApi"])["nrgPrice"]
+        } catch (e) {
+          console.log("Error getting current nrg price")
+        }
+
+        console.log("Nrg price fetched is " + nrgPriceData)
+
         if (data) {
-          let balance = data as number;
-          return balance
+          let balance = data as number
+
+          if(nrgPriceData)
+            nrgPriceData = nrgPriceData as number
+
+          return [balance, nrgPriceData]
         } else
           return null
       })
