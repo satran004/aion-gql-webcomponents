@@ -81,72 +81,69 @@ export class AionBlocks {
 
   render() {
     return (
-      <div class="o-container o-container--medium u-text">
+      <div class="aion-blocks panel box is-12-mobile">
+        <div class="panel-heading">Recent Blocks</div>
+        <br/>
         {this.blocks.map((blk) =>
-          <div  class="c-card u-highest">
-            <div class="c-card__item c-card__item--brand">#{blk.number}
-            <span class="u-small">{blk.date.toDateString()} {blk.date.toLocaleTimeString()}</span>
-              <div class="u-small">
-                <a href={"https://mainnet.aion.network/#/block/" + blk.number} target="_blank">
-                  <i> 0x{blk.hash}&nbsp;</i>
-                </a>
+
+            <article class="is-info box">
+
+                <div class="heading">
+                <strong>#{blk.number}</strong> &nbsp;- <small>{blk.date.toDateString()}&nbsp;{blk.date.toLocaleTimeString()}</small>
+                  <br/>
+                  <small><a href={"https://mainnet.aion.network/#/block/" + blk.number} target="_blank">
+                    <i> 0x{blk.hash}&nbsp;</i>
+                  </a>
+                  </small>
+                </div>
+
+              <div class="content transactions">
+                   {blk.txDetails.map( (tx, index) => {
+                      return (
+
+                        <div class="transaction" key={index}>
+                          <div class="columns">
+                            <div class="column is-two is-12-mobile">
+                              <strong>Tx #</strong>
+                            </div>
+                            <div class="column is-10 is-12-mobile">
+                              <a href={"https://mainnet.aion.network/#/transaction/" + tx.txHash} target="_blank">
+                                0x{tx.txHash}&nbsp;
+                              </a>
+                            </div>
+                          </div>
+                          <div class="columns">
+                            <div class="column is-two is-12-mobile">
+                              <strong>From</strong>
+                            </div>
+                            <div class="column is-10 is-12-mobile">
+                              0x{tx.from}
+                            </div>
+                          </div>
+                          <div class="columns">
+                            <div class="column is-two is-12-mobile">
+                              <strong>To</strong>
+                            </div>
+                            <div class="column is-10 is-12-mobile">
+                              0x{tx.to}
+                            </div>
+                          </div>
+                          <div class="columns">
+                            <div class="column is-two is-12-mobile">
+                              <strong>Value</strong>
+                            </div>
+                            <div class="column is-10 is-12-mobile">
+                              <strong>{tx.value / Math.pow(10, 18)} AION</strong>
+                            </div>
+                          </div>
+                          <br/>
+                        </div>
+                      );
+                      }
+
+                    )}
               </div>
-            </div>
-
-            <div class="c-card-body">
-              <div class="o-panel-container">
-              <ol class="c-list  u-small">
-                {blk.txDetails.map( (tx, index) => {
-
-                    return (
-
-                      <li class="c-list__item" key={index}>
-                        <div class="o-grid ">
-                          <div class="o-grid__cell o-grid__cell--width-20">
-                            Tx Hash
-                          </div>
-                          <div class="o-grid__cell">
-
-                            <a href={"https://mainnet.aion.network/#/transaction/" + tx.txHash} target="_blank">
-
-                              {tx.txHash}&nbsp;
-                            </a>
-                          </div>
-                        </div>
-                        <div class="o-grid">
-                          <div class="o-grid__cell o-grid__cell--width-20">
-                            From
-                          </div>
-                          <div class="o-grid__cell">
-                            0x{tx.from}
-                          </div>
-                        </div>
-                        <div class="o-grid ">
-                          <div class="o-grid__cell o-grid__cell--width-20">
-                            To
-                          </div>
-                          <div class="o-grid__cell">
-                            0x{tx.to}
-                          </div>
-                        </div>
-                        <div class="o-grid ">
-                          <div class="o-grid__cell o-grid__cell--width-20">
-                            Value
-                          </div>
-                          <div class="o-grid__cell">
-                            {tx.value / Math.pow(10, 18)} AION
-                          </div>
-                        </div>
-                      </li>
-                    );
-                  }
-
-                )}
-
-              </ol>
-              </div>
-            </div>
-          </div>
+            </article>
         )}
       </div>
 
