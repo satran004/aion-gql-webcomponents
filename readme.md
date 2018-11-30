@@ -14,6 +14,11 @@ Add following in the <head> tag (Will be fixed in future)
 ```  
 
 ### Import aion-gql-webcomponents.js
+```
+<script src="https://cdn.jsdelivr.net/npm/aion-gql-webcomponents@x.x.x/dist/aion-gql-webcomponents.js"></script>
+```
+
+OR
 
 ```
 <script src="https://unpkg.com/aion-gql-webcomponents@x.x.x/dist/aion-gql-webcomponents.js"></script>
