@@ -84,7 +84,8 @@ export class AionPay {
 
   //Events ----
   @Event({
-    eventName: 'TXN_COMPLETED'
+    eventName: 'TXN_COMPLETED',
+    bubbles: true
   }) transactionCompleted: EventEmitter
 
   @Event({
@@ -483,10 +484,10 @@ export class AionPay {
       }
     }
 
-    if (!this._to || this._to.trim().length == 0) {
+    /*if (!this._to || this._to.trim().length == 0) {
       this.isError = true
       this.errors.push("To address can not be empty")
-    }
+    }*/
 
     return !this.isError
   }
@@ -495,6 +496,7 @@ export class AionPay {
     e.preventDefault()
 
     if (!this.validateInput()) {
+
       console.log('not a valid input')
       return
     }

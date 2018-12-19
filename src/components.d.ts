@@ -38,17 +38,26 @@ export namespace Components {
     'onTXN_INPROGRESS'?: (event: CustomEvent) => void;
     'to'?: string;
   }
+
+  interface AionTransactions {
+    'gqlUrl': string;
+  }
+  interface AionTransactionsAttributes extends StencilHTMLAttributes {
+    'gqlUrl'?: string;
+  }
 }
 
 declare global {
   interface StencilElementInterfaces {
     'AionBlocks': Components.AionBlocks;
     'AionPay': Components.AionPay;
+    'AionTransactions': Components.AionTransactions;
   }
 
   interface StencilIntrinsicElements {
     'aion-blocks': Components.AionBlocksAttributes;
     'aion-pay': Components.AionPayAttributes;
+    'aion-transactions': Components.AionTransactionsAttributes;
   }
 
 
@@ -64,14 +73,22 @@ declare global {
     new (): HTMLAionPayElement;
   };
 
+  interface HTMLAionTransactionsElement extends Components.AionTransactions, HTMLStencilElement {}
+  var HTMLAionTransactionsElement: {
+    prototype: HTMLAionTransactionsElement;
+    new (): HTMLAionTransactionsElement;
+  };
+
   interface HTMLElementTagNameMap {
     'aion-blocks': HTMLAionBlocksElement
     'aion-pay': HTMLAionPayElement
+    'aion-transactions': HTMLAionTransactionsElement
   }
 
   interface ElementTagNameMap {
     'aion-blocks': HTMLAionBlocksElement;
     'aion-pay': HTMLAionPayElement;
+    'aion-transactions': HTMLAionTransactionsElement;
   }
 
 

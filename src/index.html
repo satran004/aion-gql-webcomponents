@@ -11,12 +11,9 @@
   </script>
 
   <script src="/build/aion-gql-webcomponents.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.2/css/bulma.min.css"/>
 
-  <style type="text/css">
-    .my-color {
-      color: blue;
-    }
-
+  <style>
     #donate {
       /*--pay-button-color: red;*/
       /*--pay-button-font-family: "Comic Sans MS", "Comic Sans", cursive;*/
@@ -38,34 +35,26 @@
 </head>
 <body>
 
+<div class="columns">
+  <div class="column">
+    <aion-pay to="" gql-url="http://localhost:8080/graphql"></aion-pay>
+  </div>
+</div>
+<div class="columns">
+  <div class="column">
 
-<aion-pay id="donate" to="a0b851faadee3af7dcde48178036a3d683c8fe36653e10c6a49c1f7c6cb28798" gql-url="https://192.168.0.96/graphql" button-text=" Quick Transfer"></aion-pay>
-
-     <!--<div>-->
-     <!--<aion-pay gql-url="https://192.168.0.96/graphql" class="pay-button">-->
-     <!--<button>Pay me</button>-->
-     <!--</aion-pay>-->
-     <!--</div>-->
-
-<aion-pay id="generic" gql-url="https://192.168.0.96/graphql" button-text="Send Any Message"></aion-pay>
-
-
-
-<div>
-  <aion-blocks limit="8" duration="10" gql-url="https://localhost/graphql"></aion-blocks>
-
-  <button onclick="todoListElement.show();">open</button>
-
-  <button onclick="genericTransferButton.showWithData(uniqueId(), 'a01112158d69a368dfebb9db63a903738cf404449d65331e9a045148793c3df3', 500, 'any data');">
-    Send Transaction
-  </button>
+    <aion-transactions gql-url="http://localhost:8080/graphql"></aion-transactions>
+  </div>
+  <div class="column">
+  <aion-blocks limit="8" duration="10" gql-url="http://localhost:8080/graphql"></aion-blocks>
+  </div>
 </div>
 
 <script>
-  const todoListElement = document.querySelector('#donate');
+  const todoListElement = document.querySelector('aion-pay');
 
   todoListElement.addEventListener('TXN_COMPLETED', event => {
-    console.log(JSON.stringify(event.detail));
+    console.log("complete: " + JSON.stringify(event.detail));
 
   })
 
@@ -74,21 +63,6 @@
   })
 
   todoListElement.addEventListener('TXN_INPROGRESS', event => {
-    console.log(JSON.stringify(event.detail));
-  })
-
-  const genericTransferButton = document.querySelector('#generic');
-
-  genericTransferButton.addEventListener('TXN_COMPLETED', event => {
-    console.log(JSON.stringify(event.detail));
-
-  })
-
-  genericTransferButton.addEventListener('TXN_FAILED', event => {
-    console.log(JSON.stringify(event.detail));
-  })
-
-  genericTransferButton.addEventListener('TXN_INPROGRESS', event => {
     console.log(JSON.stringify(event.detail));
   })
 
